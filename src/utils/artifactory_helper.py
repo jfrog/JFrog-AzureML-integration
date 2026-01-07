@@ -1,0 +1,421 @@
+"""
+Artifactory Helper Module
+Provides functions to interact with JFrog Artifactory for:
+- Authentication using Azure Key Vault credentials
+- Uploading models to Artifactory Machine Learning Repository using frogml
+- Downloading models from Artifactory Machine Learning Repository using frogml
+- Configuring pip to use Artifactory PyPI repository
+- Docker registry operations
+"""
+
+import os
+import base64
+import requests
+from typing import Optional, Dict, Any
+from azure.identity import DefaultAzureCredential
+from azure.keyvault.secrets import SecretClient
+
+try:
+    import frogml
+    FROGML_AVAILABLE = True
+except ImportError:
+    FROGML_AVAILABLE = False
+    frogml = None
+
+
+class ArtifactoryHelper:
+    """Helper class for Artifactory operations with Azure Key Vault integration."""
+    
+    def __init__(
+        self,
+        artifactory_base_url: str,
+        key_vault_name: str,
+        username_secret_name: str,
+        password_secret_name: str,
+        api_key_secret_name: Optional[str] = None,
+        access_token_secret_name: Optional[str] = None
+    ):
+        """
+        Initialize Artifactory helper.
+        
+        Args:
+            artifactory_base_url: Base URL of Artifactory instance
+            key_vault_name: Name of Azure Key Vault
+            username_secret_name: Name of secret containing Artifactory username
+            password_secret_name: Name of secret containing Artifactory password
+            api_key_secret_name: Optional name of secret containing Artifactory API key
+            access_token_secret_name: Optional name of secret containing Artifactory access token
+                                   (preferred for frogml authentication)
+        """
+        self.artifactory_base_url = artifactory_base_url.rstrip('/')
+        self.key_vault_name = key_vault_name
+        self.username_secret_name = username_secret_name
+        self.password_secret_name = password_secret_name
+        self.api_key_secret_name = api_key_secret_name
+        self.access_token_secret_name = access_token_secret_name
+        
+        self._credentials = None
+        self._session = None
+        self._frogml_configured = False
+    
+    def _get_key_vault_client(self) -> SecretClient:
+        """Get Azure Key Vault secret client."""
+        credential = DefaultAzureCredential()
+        vault_url = f"https://{self.key_vault_name}.vault.azure.net"
+        return SecretClient(vault_url=vault_url, credential=credential)
+    
+    def _get_credentials(self) -> Dict[str, str]:
+        """Retrieve Artifactory credentials from Azure Key Vault."""
+        if self._credentials is None:
+            client = self._get_key_vault_client()
+            
+            username = client.get_secret(self.username_secret_name).value
+            password = client.get_secret(self.password_secret_name).value
+            
+            self._credentials = {
+                'username': username,
+                'password': password
+            }
+            
+            # Prefer access token for frogml authentication
+            if self.access_token_secret_name:
+                try:
+                    access_token = client.get_secret(self.access_token_secret_name).value
+                    self._credentials['access_token'] = access_token
+                except Exception:
+                    # Access token not available
+                    pass
+            
+            # Optionally use API key if available (can be used as access token)
+            if self.api_key_secret_name:
+                try:
+                    api_key = client.get_secret(self.api_key_secret_name).value
+                    self._credentials['api_key'] = api_key
+                except Exception:
+                    # API key not available, use username/password
+                    pass
+        
+        return self._credentials
+    
+    def _get_session(self) -> requests.Session:
+        """Get authenticated requests session."""
+        if self._session is None:
+            creds = self._get_credentials()
+            self._session = requests.Session()
+            
+            # Use API key if available, otherwise use basic auth
+            if 'api_key' in creds:
+                self._session.headers.update({
+                    'X-JFrog-Art-Api': creds['api_key']
+                })
+            else:
+                self._session.auth = (creds['username'], creds['password'])
+        
+        return self._session
+    
+    def _configure_frogml(self):
+        """
+        Configure frogml with credentials from Azure Key Vault.
+        frogml uses environment variables JF_URL and JF_ACCESS_TOKEN for authentication.
+        """
+        if not FROGML_AVAILABLE:
+            raise ImportError(
+                "frogml package is not installed. Please install it with: pip install frogml"
+            )
+        
+        if self._frogml_configured:
+            return
+        
+        creds = self._get_credentials()
+        
+        # Set JF_URL environment variable (required by frogml)
+        os.environ['JF_URL'] = self.artifactory_base_url
+        
+        # Prefer access token, then API key, then use username/password
+        # According to JFrog documentation, JF_ACCESS_TOKEN is the preferred authentication method
+        if 'access_token' in creds:
+            os.environ['JF_ACCESS_TOKEN'] = creds['access_token']
+        elif 'api_key' in creds:
+            # Use API key as access token (API keys can often be used as access tokens)
+            os.environ['JF_ACCESS_TOKEN'] = creds['api_key']
+        else:
+            # For username/password authentication, we need to generate an access token
+            # or use basic auth. Some Artifactory setups allow using password as token
+            # In production, you should generate a proper access token via Artifactory API
+            # For now, we'll try using the password (this may work in some configurations)
+            os.environ['JF_ACCESS_TOKEN'] = creds['password']
+            # Some frogml versions may support username/password directly
+            os.environ['JF_USER'] = creds['username']
+        
+        self._frogml_configured = True
+    
+    def upload_model_to_ml_repository(
+        self,
+        model_path: str,
+        ml_repo_name: str,
+        model_name: str,
+        version: str,
+        metadata: Optional[Dict[str, Any]] = None,
+        properties: Optional[Dict[str, str]] = None,
+        dependencies: Optional[list] = None,
+        code_dir: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Upload model to Artifactory Machine Learning Repository using frogml.
+        Uses frogml.files.log_model() as per JFrog documentation.
+        
+        Args:
+            model_path: Local path to the model file
+            ml_repo_name: Name of the ML repository in Artifactory
+            model_name: Name of the model
+            version: Version of the model
+            metadata: Optional metadata dictionary (converted to properties)
+            properties: Optional properties dictionary to attach to the model
+            dependencies: Optional list of dependencies (e.g., ['pandas==1.2.3'])
+            code_dir: Optional path to directory containing code related to the model
+            
+        Returns:
+            Dictionary with upload result information
+        """
+        # Configure frogml with credentials from Key Vault
+        self._configure_frogml()
+        
+        if not FROGML_AVAILABLE:
+            raise ImportError(
+                "frogml package is not installed. Please install it with: pip install frogml"
+            )
+        
+        # Convert metadata to properties if provided
+        properties = {}
+        ######
+        #Comment because getting error when using metadata:
+        #2025-12-02 23:16:08,020 - ERROR - frogml.storage.logging._log_config.frog_ml.__upload_entity_version:253 - Max length for Properties is 60 characters.
+        #ERROR:FilesModelVersionManager:An error occurred while logging model iris-classifier to azureml-ml-local
+
+        # if metadata and not properties:
+        #     for key, value in metadata.items():
+        #         properties[str(key)] = str(value) if not isinstance(value, (dict, list)) else str(value)
+        
+        try:
+            # Upload model using frogml.files.log_model()
+            frogml.files.log_model(
+                source_path=model_path,
+                repository=ml_repo_name,
+                model_name=model_name,
+                version=version,
+                properties=properties,
+                dependencies=dependencies,
+                code_dir=code_dir
+            )
+            
+            # Construct repository path for return value
+            filename = os.path.basename(model_path)
+            repo_path = f"{ml_repo_name}/{model_name}/{version}/{filename}"
+            upload_url = f"{self.artifactory_base_url}/artifactory/{repo_path}"
+            
+            return {
+                'success': True,
+                'url': upload_url,
+                'repo_path': repo_path,
+                'model_name': model_name,
+                'version': version,
+                'properties': properties,
+                'dependencies': dependencies
+            }
+            
+        except Exception as e:
+            raise Exception(f"Failed to upload model using frogml: {str(e)}")
+    
+    def verify_model_upload(
+        self,
+        ml_repo_name: str,
+        model_name: str,
+        version: str,
+        filename: str
+    ) -> bool:
+        """
+        Verify that a model was successfully uploaded to Artifactory ML Repository.
+        Uses frogml to check if model exists.
+        
+        Args:
+            ml_repo_name: Name of the ML repository
+            model_name: Name of the model
+            version: Version of the model
+            filename: Name of the uploaded file
+            
+        Returns:
+            True if model exists, False otherwise
+        """
+        # Configure frogml with credentials from Key Vault
+        self._configure_frogml()
+        
+        try:
+            # Try using frogml to verify model existence
+            if FROGML_AVAILABLE:
+                try:
+                    # Use frogml.files.get_model_version() to check if model exists
+                    model_version = frogml.files.get_model_version(
+                        repository=ml_repo_name,
+                        model_name=model_name,
+                        version=version
+                    )
+                    # If we can get the model version, it exists
+                    return model_version is not None
+                except (AttributeError, Exception) as e:
+                    # frogml method may not be available or model doesn't exist
+                    # Fall back to REST API
+                    pass
+        except Exception:
+            # If frogml fails, fall back to REST API
+            pass
+        
+        # Fallback to REST API verification
+        session = self._get_session()
+        repo_path = f"{ml_repo_name}/{model_name}/{version}/{filename}"
+        check_url = f"{self.artifactory_base_url}/artifactory/api/storage/{repo_path}"
+        
+        try:
+            response = session.get(check_url)
+            response.raise_for_status()
+            return True
+        except requests.exceptions.HTTPError:
+            return False
+    
+    def download_model_from_ml_repository(
+        self,
+        ml_repo_name: str,
+        model_name: str,
+        version: str,
+        download_path: str,
+        filename: Optional[str] = None
+    ) -> str:
+        """
+        Download model from Artifactory Machine Learning Repository using frogml.
+        Uses frogml.files.download_model() or frogml.files.get_model_version().download().
+        
+        Args:
+            ml_repo_name: Name of the ML repository
+            model_name: Name of the model
+            version: Version of the model
+            download_path: Local directory path to save the downloaded model
+            filename: Optional specific filename to save (defaults to model name)
+            
+        Returns:
+            Path to the downloaded model file
+        """
+        # Configure frogml with credentials from Key Vault
+        self._configure_frogml()
+        
+        if not FROGML_AVAILABLE:
+            raise ImportError(
+                "frogml package is not installed. Please install it with: pip install frogml"
+            )
+        
+        # Ensure download directory exists
+        os.makedirs(download_path, exist_ok=True)
+        
+        try:
+            # Try using frogml.files.download_model() first
+            try:
+                frogml.files.download_model(
+                    repository=ml_repo_name,
+                    model_name=model_name,
+                    version=version,
+                    destination_path=download_path
+                )
+            except AttributeError:
+                # If download_model doesn't exist, try get_model_version().download()
+                model_version = frogml.files.get_model_version(
+                    repository=ml_repo_name,
+                    model_name=model_name,
+                    version=version
+                )
+                if filename:
+                    target_path = os.path.join(download_path, filename)
+                else:
+                    target_path = download_path
+                model_version.download(target_path)
+            
+            # Determine the downloaded file path
+            if filename:
+                downloaded_file = os.path.join(download_path, filename)
+            else:
+                # Try to find the downloaded file
+                # frogml may download with the model name or version
+                possible_names = [
+                    os.path.join(download_path, f"{model_name}-{version}.pkl"),
+                    os.path.join(download_path, f"{model_name}.pkl"),
+                    os.path.join(download_path, model_name),
+                    os.path.join(download_path, f"{model_name}-{version}")
+                ]
+                
+                downloaded_file = None
+                for possible_path in possible_names:
+                    if os.path.exists(possible_path):
+                        downloaded_file = possible_path
+                        break
+                
+                if not downloaded_file:
+                    # List files in download_path to find what was downloaded
+                    files = [f for f in os.listdir(download_path) if os.path.isfile(os.path.join(download_path, f))]
+                    if files:
+                        downloaded_file = os.path.join(download_path, files[0])
+            
+            if downloaded_file and os.path.exists(downloaded_file):
+                return downloaded_file
+            else:
+                raise Exception(
+                    f"Downloaded file not found. Expected in: {download_path}. "
+                    f"Please check the download_path directory."
+                )
+                
+        except Exception as e:
+            raise Exception(f"Failed to download model using frogml: {str(e)}")
+    
+    def get_pip_config(self, pypi_repo_name: str) -> str:
+        """
+        Generate pip configuration for Artifactory PyPI repository.
+        
+        Args:
+            pypi_repo_name: Name of the PyPI repository in Artifactory
+            
+        Returns:
+            pip.conf content as string
+        """
+        creds = self._get_credentials()
+        username = creds['username']
+        password = creds['password']
+        
+        # Construct PyPI repository URL
+        pypi_url = f"{self.artifactory_base_url}/artifactory/api/pypi/{pypi_repo_name}/simple"
+        
+        # Create pip.conf content
+        pip_conf = f"""[global]
+index-url = https://{username}:{password}@{self.artifactory_base_url.replace('https://', '').replace('http://', '')}/artifactory/api/pypi/{pypi_repo_name}/simple
+trusted-host = {self.artifactory_base_url.replace('https://', '').replace('http://', '')}
+"""
+        return pip_conf
+    
+    def configure_pip(self, pypi_repo_name: str, pip_conf_path: str = "/etc/pip.conf"):
+        """
+        Configure pip to use Artifactory PyPI repository.
+        
+        Args:
+            pypi_repo_name: Name of the PyPI repository
+            pip_conf_path: Path where pip.conf should be written
+        """
+        pip_conf_content = self.get_pip_config(pypi_repo_name)
+        
+        # Create directory if it doesn't exist
+        os.makedirs(os.path.dirname(pip_conf_path), exist_ok=True)
+        
+        # Write pip.conf
+        with open(pip_conf_path, 'w') as f:
+            f.write(pip_conf_content)
+        
+        # Also configure user-level pip config
+        user_pip_conf = os.path.expanduser("~/.pip/pip.conf")
+        os.makedirs(os.path.dirname(user_pip_conf), exist_ok=True)
+        with open(user_pip_conf, 'w') as f:
+            f.write(pip_conf_content)
+
