@@ -1,0 +1,36 @@
+# AzureML and Artifactory Configuration
+
+azure:
+  subscription_id: "PLACEHOLDER"
+  resource_group: "PLACEHOLDER"
+  workspace_name: "PLACEHOLDER"
+  location: "PLACEHOLDER"
+
+key_vault:
+  name: "PLACEHOLDER"
+  secrets:
+    artifactory_username: "PLACEHOLDER"
+    artifactory_access_token: "PLACEHOLDER"  # Optional, preferred for frogml authentication
+
+artifactory:
+  base_url: "PLACEHOLDER"
+  repositories:
+    pypi: "PLACEHOLDER"  # PyPI repository name
+    docker: "PLACEHOLDER"  # Docker registry repository name
+    ml: "PLACEHOLDER"  # Machine Learning Repository name
+  image_name: "PLACEHOLDER"
+  image_tag: "PLACEHOLDER"
+  # Full URLs will be constructed as: {base_url}/artifactory/{repository_name}
+
+azureml:
+  compute:
+    cluster_name: "PLACEHOLDER"
+    vm_size: "PLACEHOLDER"
+    min_nodes: 0
+    max_nodes: 1
+    managed_identity: "PLACEHOLDER"
+
+model:
+  name: "PLACEHOLDER"
+  version_format: "v{timestamp}"  # Version will be generated with timestamp
+

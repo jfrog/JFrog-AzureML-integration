@@ -262,66 +262,74 @@ Azure Key Vault (Credentials Storage)
 
 ## Quick Start
 
-### 1. Set Up Environment Variables
 
-Source the environment setup script to configure Artifactory and Azure credentials:
+### Intiliaze Setup Environment (R&R: Azure Administrator)
+### Prerequasite
+##### * AzureML Workspace (R&R: Azure Administrator)
+
+
+
+##### * In the Azure Machine Learning workspace Resource add Contributor (TODO add the least privlages to enable working with ws) role to the relevant users or Identities.
+##### * Create Manage Identity and assignmend it with "Key Vault Secrets User" role to the Workaspace's Key-Vault.
+
+
+
+### Configure training (R&R: ML Engenier)
+### Prerequasite
+##### * Python >= 3.11
+##### * Create pip.conf pointing to you JFrog platform. (See pip.example.conf for referance)
+##### * Azure CLI configured
+##### * Login to Azure account. e.g.`az login --tenant <Tenant id>`, or any othe preferd method.
+##### * Ensure Docker BuildKit is enabled for secret support: `export DOCKER_BUILDKIT=1`
+
+### 1. Set Up Python virtual environment
+```bash
+source setup_venv.sh
+```
+
+### 2. Set Up Environment Variables
+
+Set the Environment variables in the file setup_env.example.sh
+Source the environment setup script to configure Artifactory and Azure key-Vault name:
 
 ```bash
-source setup_env.sh
+source setup_env.example.sh
 ```
 
 This script sets the following environment variables:
-- `ARTIFACTORY_USERNAME` - Artifactory username
-- `ARTIFACTORY_PASSWORD` - Artifactory password/access token
+
 - `ARTIFACTORY_HOST` - Artifactory hostname
 - `ARTIFACTORY_PYPI_REPO` - PyPI repository name
 - `ARTIFACTORY_DOCKER_REPO` - Docker repository name
 - `AZURE_KEY_VAULT_NAME` - Azure Key Vault name
-- `AZURE_CLIENT_ID` - Azure service principal client ID
-- `AZURE_CLIENT_SECRET` - Azure service principal secret
-- `AZURE_TENANT_ID` - Azure tenant ID
 
-### 2. Build Docker Image
+
+### 3. Build, Tag and Push Docker Image
 
 Build the Docker image with the specified tag. The build uses Docker secrets for secure pip configuration:
 
-```bash
-TAG=5.0
 
+```bash
+TAG=<DOCKER_TAG>
+
+# Use Artifactory base image (if available)
 docker build \
   --platform linux/amd64 \
-  -t azureml-training:${TAG} \
+  -t ${ARTIFACTORY_HOST}/${ARTIFACTORY_DOCKER_REPO}/azureml-training:${TAG} \
   -f docker/Dockerfile \
   --secret id=pipconfig,src=pip.conf \
-  --build-arg ARTIFACTORY_DOCKER_REGISTRY="${ARTIFACTORY_HOST}" \
-  --build-arg ARTIFACTORY_DOCKER_REPO="${ARTIFACTORY_DOCKER_REPO}" \
+  --build-arg BASE_IMAGE="${ARTIFACTORY_HOST}/${ARTIFACTORY_DOCKER_REPO}/python:3.11-slim" \
+  --push \
   .
 ```
 
-**Note:** Ensure Docker BuildKit is enabled for secret support:
-```bash
-export DOCKER_BUILDKIT=1
-```
 
-### 3. Tag and Push to Artifactory
-
-Tag the image for Artifactory and push it to the registry:
-
-```bash
-docker tag azureml-training:${TAG} ${ARTIFACTORY_HOST}/${ARTIFACTORY_DOCKER_REPO}/azureml-training:${TAG}
-
-docker push ${ARTIFACTORY_HOST}/${ARTIFACTORY_DOCKER_REPO}/azureml-training:${TAG}
-```
-
-Or using the hardcoded path:
-
-```bash
-docker tag azureml-training:${TAG} eldada.jfrog.io/azureml-docker-virtual/azureml-training:${TAG}
-
-docker push eldada.jfrog.io/azureml-docker-virtual/azureml-training:${TAG}
-```
 
 ### 4. Run Training Pipeline
+
+#TODO: Remove the arti user and access and add just the secret name that Aviv is rotate. The user and the token should be included in the same value as in AWS.
+
+Edis config/config.example.yaml and update the TAG value in artifactory.image_tag
 
 Submit the training pipeline to AzureML:
 
