@@ -7,15 +7,21 @@ This pipeline demonstrates:
 - Authentication via Azure Key Vault
 """
 
-import os
-import yaml
 from datetime import datetime
-from azure.ai.ml import MLClient, dsl, Input, Output, command
+import os
+import uuid
+
+from azure.ai.ml import Input, MLClient, Output, command, dsl
+from azure.ai.ml.constants._common import IdentityType
 from azure.ai.ml.entities import Environment
-from azure.identity import DefaultAzureCredential
-from azure.keyvault.secrets import SecretClient
 from azure.ai.ml.entities import WorkspaceConnection
 from azure.ai.ml.entities import UsernamePasswordConfiguration
+from azure.ai.ml.entities._credentials import IdentityConfiguration
+from azure.identity import DefaultAzureCredential
+from azure.keyvault.secrets import SecretClient
+from azure.mgmt.authorization import AuthorizationManagementClient
+import yaml
+from azure.ai.ml.entities import ManagedIdentityConfiguration
 
 
 def load_config(config_path: str = "config/config.yaml") -> dict:
@@ -34,6 +40,9 @@ def get_ml_client(config: dict) -> MLClient:
         resource_group_name=config['azure']['resource_group'],
         workspace_name=config['azure']['workspace_name']
     )
+def get_auth_client(config: dict) -> AuthorizationManagementClient:
+    """Get AzureML MLClient."""
+    return AuthorizationManagementClient(credential=DefaultAzureCredential(), subscription_id=config['azure']['subscription_id'])
 
 
 @dsl.pipeline(
@@ -75,13 +84,11 @@ def training_pipeline():
         "ARTIFACTORY_PYPI_REPO": config['artifactory']['repositories']['pypi'],
         "ARTIFACTORY_ML_REPO": config['artifactory']['repositories']['ml'],
         "ARTIFACTORY_USERNAME_SECRET": config['key_vault']['secrets']['artifactory_username'],
-        "ARTIFACTORY_PASSWORD_SECRET": config['key_vault']['secrets']['artifactory_password'],
-        "MODEL_NAME": config['model']['name']
+        "MODEL_NAME": config['model']['name'],
+        "AZURE_CLIENT_ID": config['azureml']['compute']['managed_identity_client_id'],
+        "JF_ACCESS_TOKEN": "from key vault get oidc short live token"
     }
-    
-    # Add optional API key secret if available
-    if 'artifactory_api_key' in config['key_vault']['secrets']:
-        env_vars["ARTIFACTORY_API_KEY_SECRET"] = config['key_vault']['secrets']['artifactory_api_key']
+
     
     # Add optional access token secret if available (preferred for frogml)
     if 'artifactory_access_token' in config['key_vault']['secrets']:
@@ -116,6 +123,9 @@ def main():
     
     # Get ML client
     ml_client = get_ml_client(config)
+
+    # Get auth client to set the RBAC role for the key vault to enable AzureML to access the key vault secrets
+    auth_client = get_auth_client(config)
     
     # Create or get compute cluster
     from azure.ai.ml.entities import AmlCompute
@@ -123,16 +133,22 @@ def main():
     try:
         compute = ml_client.compute.get(config['azureml']['compute']['cluster_name'])
         print(f"Using existing compute cluster: {compute.name}")
+        # Check if compute has managed identity, if not we'll need to update it
+        if not hasattr(compute, 'identity') or compute.identity is None:
+            print("Warning: Compute cluster does not have managed identity configured.")
+            print("  You may need to enable it manually in Azure Portal or update the compute.")
     except Exception:
         print(f"Creating compute cluster: {config['azureml']['compute']['cluster_name']}")
+        # Create compute with system-assigned managed identity
         compute = AmlCompute(
             name=config['azureml']['compute']['cluster_name'],
             size=config['azureml']['compute']['vm_size'],
             min_instances=config['azureml']['compute']['min_nodes'],
-            max_instances=config['azureml']['compute']['max_nodes']
+            max_instances=config['azureml']['compute']['max_nodes'],
+            identity=IdentityConfiguration(type="user_assigned",user_assigned_identities=[ManagedIdentityConfiguration(resource_id=config['azureml']['compute']['managed_identity'])])
         )
         ml_client.compute.begin_create_or_update(compute).result()
-    
+
     # Create workspace connection for Artifactory Docker registry authentication
     # This allows AzureML to pull the Docker image from Artifactory
     try:
@@ -158,9 +174,8 @@ def main():
         if 'artifactory_username' in config['key_vault']['secrets']:
             try:
                 username = kv_client.get_secret(config['key_vault']['secrets']['artifactory_username']).value
-                password = kv_client.get_secret(config['key_vault']['secrets']['artifactory_password']).value
             except Exception as e:
-                print(f"Warning: Could not retrieve username/password: {e}")
+                print(f"Warning: Could not retrieve username: {e}")
         
         # Prefer access token for API key auth, fallback to username/password
         if access_token and username:

@@ -12,7 +12,7 @@ import os
 import base64
 import requests
 from typing import Optional, Dict, Any
-from azure.identity import DefaultAzureCredential
+from azure.identity import DefaultAzureCredential, ManagedIdentityCredential
 from azure.keyvault.secrets import SecretClient
 
 try:
@@ -31,8 +31,6 @@ class ArtifactoryHelper:
         artifactory_base_url: str,
         key_vault_name: str,
         username_secret_name: str,
-        password_secret_name: str,
-        api_key_secret_name: Optional[str] = None,
         access_token_secret_name: Optional[str] = None
     ):
         """
@@ -50,8 +48,6 @@ class ArtifactoryHelper:
         self.artifactory_base_url = artifactory_base_url.rstrip('/')
         self.key_vault_name = key_vault_name
         self.username_secret_name = username_secret_name
-        self.password_secret_name = password_secret_name
-        self.api_key_secret_name = api_key_secret_name
         self.access_token_secret_name = access_token_secret_name
         
         self._credentials = None
@@ -60,8 +56,20 @@ class ArtifactoryHelper:
     
     def _get_key_vault_client(self) -> SecretClient:
         """Get Azure Key Vault secret client."""
-        credential = DefaultAzureCredential()
+        # In AzureML compute, use ManagedIdentityCredential
+        # Try user-assigned first (if client_id is provided), then system-assigned
         vault_url = f"https://{self.key_vault_name}.vault.azure.net"
+        credential = None
+        client_id = os.environ.get('AZURE_CLIENT_ID')
+    
+        if client_id:
+           # User-assigned managed identity
+           print(f"Using user-assigned managed identity with client_id: {client_id}")
+           credential = ManagedIdentityCredential(client_id=client_id)
+        else:
+           # System-assigned managed identity (no parameters)
+           print("Using system-assigned managed identity")
+           credential = ManagedIdentityCredential()
         return SecretClient(vault_url=vault_url, credential=credential)
     
     def _get_credentials(self) -> Dict[str, str]:
@@ -70,11 +78,9 @@ class ArtifactoryHelper:
             client = self._get_key_vault_client()
             
             username = client.get_secret(self.username_secret_name).value
-            password = client.get_secret(self.password_secret_name).value
             
             self._credentials = {
                 'username': username,
-                'password': password
             }
             
             # Prefer access token for frogml authentication
@@ -85,33 +91,10 @@ class ArtifactoryHelper:
                 except Exception:
                     # Access token not available
                     pass
-            
-            # Optionally use API key if available (can be used as access token)
-            if self.api_key_secret_name:
-                try:
-                    api_key = client.get_secret(self.api_key_secret_name).value
-                    self._credentials['api_key'] = api_key
-                except Exception:
-                    # API key not available, use username/password
-                    pass
+
         
         return self._credentials
     
-    def _get_session(self) -> requests.Session:
-        """Get authenticated requests session."""
-        if self._session is None:
-            creds = self._get_credentials()
-            self._session = requests.Session()
-            
-            # Use API key if available, otherwise use basic auth
-            if 'api_key' in creds:
-                self._session.headers.update({
-                    'X-JFrog-Art-Api': creds['api_key']
-                })
-            else:
-                self._session.auth = (creds['username'], creds['password'])
-        
-        return self._session
     
     def _configure_frogml(self):
         """
@@ -135,18 +118,7 @@ class ArtifactoryHelper:
         # According to JFrog documentation, JF_ACCESS_TOKEN is the preferred authentication method
         if 'access_token' in creds:
             os.environ['JF_ACCESS_TOKEN'] = creds['access_token']
-        elif 'api_key' in creds:
-            # Use API key as access token (API keys can often be used as access tokens)
-            os.environ['JF_ACCESS_TOKEN'] = creds['api_key']
-        else:
-            # For username/password authentication, we need to generate an access token
-            # or use basic auth. Some Artifactory setups allow using password as token
-            # In production, you should generate a proper access token via Artifactory API
-            # For now, we'll try using the password (this may work in some configurations)
-            os.environ['JF_ACCESS_TOKEN'] = creds['password']
-            # Some frogml versions may support username/password directly
-            os.environ['JF_USER'] = creds['username']
-        
+            os.environ['JF_USER'] = creds['username']        
         self._frogml_configured = True
     
     def upload_model_to_ml_repository(
@@ -266,20 +238,8 @@ class ArtifactoryHelper:
                     # Fall back to REST API
                     pass
         except Exception:
-            # If frogml fails, fall back to REST API
-            pass
-        
-        # Fallback to REST API verification
-        session = self._get_session()
-        repo_path = f"{ml_repo_name}/{model_name}/{version}/{filename}"
-        check_url = f"{self.artifactory_base_url}/artifactory/api/storage/{repo_path}"
-        
-        try:
-            response = session.get(check_url)
-            response.raise_for_status()
-            return True
-        except requests.exceptions.HTTPError:
             return False
+
     
     def download_model_from_ml_repository(
         self,
@@ -372,50 +332,3 @@ class ArtifactoryHelper:
         except Exception as e:
             raise Exception(f"Failed to download model using frogml: {str(e)}")
     
-    def get_pip_config(self, pypi_repo_name: str) -> str:
-        """
-        Generate pip configuration for Artifactory PyPI repository.
-        
-        Args:
-            pypi_repo_name: Name of the PyPI repository in Artifactory
-            
-        Returns:
-            pip.conf content as string
-        """
-        creds = self._get_credentials()
-        username = creds['username']
-        password = creds['password']
-        
-        # Construct PyPI repository URL
-        pypi_url = f"{self.artifactory_base_url}/artifactory/api/pypi/{pypi_repo_name}/simple"
-        
-        # Create pip.conf content
-        pip_conf = f"""[global]
-index-url = https://{username}:{password}@{self.artifactory_base_url.replace('https://', '').replace('http://', '')}/artifactory/api/pypi/{pypi_repo_name}/simple
-trusted-host = {self.artifactory_base_url.replace('https://', '').replace('http://', '')}
-"""
-        return pip_conf
-    
-    def configure_pip(self, pypi_repo_name: str, pip_conf_path: str = "/etc/pip.conf"):
-        """
-        Configure pip to use Artifactory PyPI repository.
-        
-        Args:
-            pypi_repo_name: Name of the PyPI repository
-            pip_conf_path: Path where pip.conf should be written
-        """
-        pip_conf_content = self.get_pip_config(pypi_repo_name)
-        
-        # Create directory if it doesn't exist
-        os.makedirs(os.path.dirname(pip_conf_path), exist_ok=True)
-        
-        # Write pip.conf
-        with open(pip_conf_path, 'w') as f:
-            f.write(pip_conf_content)
-        
-        # Also configure user-level pip config
-        user_pip_conf = os.path.expanduser("~/.pip/pip.conf")
-        os.makedirs(os.path.dirname(user_pip_conf), exist_ok=True)
-        with open(user_pip_conf, 'w') as f:
-            f.write(pip_conf_content)
-

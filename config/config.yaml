@@ -1,36 +1,36 @@
 # AzureML and Artifactory Configuration
 
 azure:
-  subscription_id: "PLACEHOLDER"
-  resource_group: "PLACEHOLDER"
-  workspace_name: "PLACEHOLDER"
-  location: "PLACEHOLDER"
+  subscription_id: "2b9d2cdc-6f68-466a-abc2-9652d5c6dfd6"
+  resource_group: "ctoa-azureml-poc"
+  workspace_name: "ctoa-azureml-poc-workspace"
+  location: "Sweden Central"
 
 key_vault:
-  name: "PLACEHOLDER"
+  name: "ctoaazuremlpoc5615636730"
   secrets:
-    artifactory_username: "PLACEHOLDER"
-    artifactory_password: "PLACEHOLDER"
-    artifactory_access_token: "PLACEHOLDER"  # Optional, preferred for frogml authentication
+    artifactory_username: "artifactory-username"
+    artifactory_access_token: "artifactory-access-token"  # Optional, preferred for frogml authentication
 
 artifactory:
-  base_url: "PLACEHOLDER"
+  base_url: "https://eldada.jfrog.io"
   repositories:
-    pypi: "PLACEHOLDER"  # PyPI repository name
-    docker: "PLACEHOLDER"  # Docker registry repository name
-    ml: "PLACEHOLDER"  # Machine Learning Repository name
-  image_name: "PLACEHOLDER"
-  image_tag: "PLACEHOLDER"
+    pypi: "azureml-pypi-remote"  # PyPI repository name
+    docker: "azureml-docker-virtual"  # Docker registry repository name
+    ml: "azureml-ml-local"  # Machine Learning Repository name
+  image_name: "azureml-training"
+  image_tag: "6.1_e2e"
   # Full URLs will be constructed as: {base_url}/artifactory/{repository_name}
 
 azureml:
   compute:
-    cluster_name: "PLACEHOLDER"
-    vm_size: "PLACEHOLDER"
-    min_nodes: 0
+    cluster_name: "azureml-poc-cluster1"
+    vm_size: "Standard_DS3_v2"
+    min_nodes: 1
     max_nodes: 1
-
+    managed_identity: "/subscriptions/2b9d2cdc-6f68-466a-abc2-9652d5c6dfd6/resourceGroups/ctoa-azureml-poc/providers/Microsoft.ManagedIdentity/userAssignedIdentities/ctoa-azureml-poc-managed-identity"
+    managed_identity_client_id: "55f5d547-cab3-4c22-afa1-267400bfa8b5"
 model:
-  name: "PLACEHOLDER"
+  name: "iris-classifier"
   version_format: "v{timestamp}"  # Version will be generated with timestamp
 
