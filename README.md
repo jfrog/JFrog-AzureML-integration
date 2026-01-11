@@ -1,4 +1,4 @@
-# AzureML + JFrog Artifactory Integration (WIP)
+# AzureML + JFrog Artifactory Integration (Work In Progress)
 
 This project demonstrates integration between Azure Machine Learning (AzureML) and JFrog Artifactory for managing Python dependencies, Docker images, and AI model artifacts.
 
