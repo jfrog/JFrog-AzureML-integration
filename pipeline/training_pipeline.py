@@ -144,7 +144,8 @@ def main():
             size=config['azureml']['compute']['vm_size'],
             min_instances=config['azureml']['compute']['min_nodes'],
             max_instances=config['azureml']['compute']['max_nodes'],
-            identity=IdentityConfiguration(type="user_assigned",user_assigned_identities=[ManagedIdentityConfiguration(resource_id=config['azureml']['compute']['managed_identity'])])
+            #identity=IdentityConfiguration(type="user_assigned",user_assigned_identities=[ManagedIdentityConfiguration(resource_id=config['azureml']['compute']['managed_identity'])])
+            identity=IdentityConfiguration(type="user_assigned",user_assigned_identities=[ManagedIdentityConfiguration(client=config['azureml']['compute']['managed_identity_client_id'])])
         )
         ml_client.compute.begin_create_or_update(compute).result()
 
