@@ -1,6 +1,6 @@
 #!/bin/bash
 # setup_venv.sh
-export PIP_CONFIG_FILE=$(pwd)/pip.conf
+
 
 # Find Python 3.11+ (check python3.11, python3.12, python3.13, etc., then fallback to python3)
 PYTHON_CMD=""

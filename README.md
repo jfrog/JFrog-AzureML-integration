@@ -264,72 +264,65 @@ Azure Key Vault (Credentials Storage)
 
 
 ### Intiliaze Setup Environment (R&R: Azure Administrator)
-### Prerequasite
-##### * AzureML Workspace (R&R: Azure Administrator)
+### Prerequisites
+* AzureML Workspace (R&R: Azure Administrator)
+* In the Azure Machine Learning workspace Resource add Contributor (TODO add the least privlages to enable working with ws) role to the relevant users or Identities.
+### Set Up
+* Create Manage Identity and assign it with "Key Vault Secrets User" role for the Workaspace's Key-Vault:
+    1. In Azure Managed Identity, create a new managed identity and name it. make sure to choose the AzureML workspace Resource Group and Region
+    2. Return to the Azure ML Workspace and inside the overview page drill down to its key vault
+    3. inside the Azure ML workspace key vault, open the Access control (IAM)
+    4. Add role assignment to role "Key Vault Secrets User" for the managed identity you created above    
+    5. Still inside the Workspace Keyvault entity Open > settings > Access Configuration settings and Make sure 'Azure role-based access control (recommended)' is selected
 
+### JFrog Setup (R&R: JFrog Administrator or Project Admin)
+### Prerequisites
+* JFrog Pypi remote repository
+* JFrog Docker Virtual, Local and Remote repositories
+* JFrog Machine Learning Repository
 
-
-##### * In the Azure Machine Learning workspace Resource add Contributor (TODO add the least privlages to enable working with ws) role to the relevant users or Identities.
-##### * Create Manage Identity and assignmend it with "Key Vault Secrets User" role to the Workaspace's Key-Vault.
-
-
-
-### Configure training (R&R: ML Engenier)
-### Prerequasite
-##### * Python >= 3.11
-##### * Create pip.conf pointing to you JFrog platform. (See pip.example.conf for referance)
-##### * Azure CLI configured
-##### * Login to Azure account. e.g.`az login --tenant <Tenant id>`, or any othe preferd method.
-##### * Ensure Docker BuildKit is enabled for secret support: `export DOCKER_BUILDKIT=1`
+### Configure training (R&R: ML Engineer)
+### Prerequisites
+* Python >= 3.11
+* Create pip.conf pointing to you JFrog platform. (See pip.example.conf for referance)
+* Azure CLI configured
+* Login to Azure account. e.g.`az login --tenant <Tenant id>`, or any othe preferd method.
+* Ensure Docker BuildKit is enabled for secret support: `export DOCKER_BUILDKIT=1`
 
 ### 1. Set Up Python virtual environment
 ```bash
+cd <project directory>
+export PIP_CONFIG_FILE=<pip.conf file you want to use>
 source setup_venv.sh
 ```
 
-### 2. Set Up Environment Variables
-
-Set the Environment variables in the file setup_env.example.sh
-Source the environment setup script to configure Artifactory and Azure key-Vault name:
-
-```bash
-source setup_env.example.sh
-```
-
-This script sets the following environment variables:
-
-- `ARTIFACTORY_HOST` - Artifactory hostname
-- `ARTIFACTORY_PYPI_REPO` - PyPI repository name
-- `ARTIFACTORY_DOCKER_REPO` - Docker repository name
-- `AZURE_KEY_VAULT_NAME` - Azure Key Vault name
-
-
-### 3. Build, Tag and Push Docker Image
+### 2. Build, Tag and Push Docker Image
 
 Build the Docker image with the specified tag. The build uses Docker secrets for secure pip configuration:
 
 
 ```bash
+export ARTIFACTORY_HOST=PLACEHOLDER, i.e. <my jfrog platform host> without http schema
+export ARTIFACTORY_DOCKER_REPO=PLACEHOLDER i.e. local/virtual repository name
 TAG=<DOCKER_TAG>
+docker login ${ARTIFACTORY_HOST}
 
 # Use Artifactory base image (if available)
 docker build \
   --platform linux/amd64 \
   -t ${ARTIFACTORY_HOST}/${ARTIFACTORY_DOCKER_REPO}/azureml-training:${TAG} \
   -f docker/Dockerfile \
-  --secret id=pipconfig,src=pip.conf \
+  --secret id=pipconfig,src=${PIP_CONFIG_FILE} \
   --build-arg BASE_IMAGE="${ARTIFACTORY_HOST}/${ARTIFACTORY_DOCKER_REPO}/python:3.11-slim" \
   --push \
   .
 ```
 
-
-
-### 4. Run Training Pipeline
+### 3. Run Training Pipeline
 
 #TODO: Remove the arti user and access and add just the secret name that Aviv is rotate. The user and the token should be included in the same value as in AWS.
 
-Edis config/config.example.yaml and update the TAG value in artifactory.image_tag
+Clone config/config.example.yaml into config/config.yaml and update the missing placeholder values
 
 Submit the training pipeline to AzureML:
 
