@@ -13,7 +13,7 @@ key_vault:
     artifactory_access_token: "PLACEHOLDER"  # Optional, preferred for frogml authentication
 
 artifactory:
-  base_url: "PLACEHOLDER"
+  artifactory_host: "PLACEHOLDER"
   repositories:
     pypi: "PLACEHOLDER"  # PyPI repository name
     docker: "PLACEHOLDER"  # Docker registry repository name

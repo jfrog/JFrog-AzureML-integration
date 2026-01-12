@@ -116,7 +116,7 @@ if __name__ == "__main__":
     # Upload to Artifactory if environment variables are set
     if all([
         os.environ.get('AZURE_KEY_VAULT_NAME'),
-        os.environ.get('ARTIFACTORY_BASE_URL'),
+        os.environ.get('ARTIFACTORY_artifactory_host'),
         os.environ.get('ARTIFACTORY_ML_REPO')
     ]):
         try:
@@ -125,7 +125,7 @@ if __name__ == "__main__":
             
             print("\nUploading model to Artifactory ML Repository...")
             helper = ArtifactoryHelper(
-                artifactory_base_url=os.environ['ARTIFACTORY_BASE_URL'],
+                artifactory_artifactory_host=os.environ['ARTIFACTORY_artifactory_host'],
                 key_vault_name=os.environ['AZURE_KEY_VAULT_NAME'],
                 username_secret_name=os.environ.get('ARTIFACTORY_USERNAME_SECRET', 'artifactory-username'),
                 access_token_secret_name=os.environ.get('ARTIFACTORY_ACCESS_TOKEN_SECRET')
