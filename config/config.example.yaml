@@ -13,23 +13,23 @@ key_vault:
     artifactory_access_token: "PLACEHOLDER"  # Optional, preferred for frogml authentication
 
 artifactory:
-  base_url: "PLACEHOLDER"
+  base_url: "PLACEHOLDER" # include http schema i.e. https://<jfrog host>
   repositories:
     pypi: "PLACEHOLDER"  # PyPI repository name
     docker: "PLACEHOLDER"  # Docker registry repository name
     ml: "PLACEHOLDER"  # Machine Learning Repository name
-  image_name: "PLACEHOLDER"
+  image_name: "azureml-training"
   image_tag: "PLACEHOLDER"
   # Full URLs will be constructed as: {base_url}/artifactory/{repository_name}
 
 azureml:
   compute:
     cluster_name: "PLACEHOLDER"
-    vm_size: "PLACEHOLDER"
+    vm_size: "PLACEHOLDER" # for example Standard_DS3_v2
     min_nodes: 0
     max_nodes: 1
-    managed_identity: "PLACEHOLDER"
-
+    managed_identity: "PLACEHOLDER" # use the resource id from the json view of the managed identity you created on the enviornment setup step 
+    managed_identity_client_id: "PLACEHOLDER" # use the client id from the managed identity you created on the enviornment setup step   
 model:
   name: "PLACEHOLDER"
   version_format: "v{timestamp}"  # Version will be generated with timestamp
