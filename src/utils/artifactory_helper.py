@@ -28,7 +28,7 @@ class ArtifactoryHelper:
     
     def __init__(
         self,
-        artifactory_base_url: str,
+        artifactory_artifactory_host: str,
         key_vault_name: str,
         username_secret_name: str,
         access_token_secret_name: Optional[str] = None
@@ -37,7 +37,7 @@ class ArtifactoryHelper:
         Initialize Artifactory helper.
         
         Args:
-            artifactory_base_url: Base URL of Artifactory instance
+            artifactory_artifactory_host: Base URL of Artifactory instance
             key_vault_name: Name of Azure Key Vault
             username_secret_name: Name of secret containing Artifactory username
             password_secret_name: Name of secret containing Artifactory password
@@ -45,7 +45,7 @@ class ArtifactoryHelper:
             access_token_secret_name: Optional name of secret containing Artifactory access token
                                    (preferred for frogml authentication)
         """
-        self.artifactory_base_url = artifactory_base_url.rstrip('/')
+        self.artifactory_artifactory_host = artifactory_artifactory_host.rstrip('/')
         self.key_vault_name = key_vault_name
         self.username_secret_name = username_secret_name
         self.access_token_secret_name = access_token_secret_name
@@ -112,7 +112,7 @@ class ArtifactoryHelper:
         creds = self._get_credentials()
         
         # Set JF_URL environment variable (required by frogml)
-        os.environ['JF_URL'] = self.artifactory_base_url
+        os.environ['JF_URL'] = self.artifactory_artifactory_host
         
         # Prefer access token, then API key, then use username/password
         # According to JFrog documentation, JF_ACCESS_TOKEN is the preferred authentication method
@@ -183,7 +183,7 @@ class ArtifactoryHelper:
             # Construct repository path for return value
             filename = os.path.basename(model_path)
             repo_path = f"{ml_repo_name}/{model_name}/{version}/{filename}"
-            upload_url = f"{self.artifactory_base_url}/artifactory/{repo_path}"
+            upload_url = f"{self.artifactory_artifactory_host}/artifactory/{repo_path}"
             
             return {
                 'success': True,
