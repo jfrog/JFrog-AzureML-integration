@@ -116,16 +116,16 @@ if __name__ == "__main__":
     # Upload to Artifactory if environment variables are set
     if all([
         os.environ.get('AZURE_KEY_VAULT_NAME'),
-        os.environ.get('ARTIFACTORY_artifactory_host'),
+        os.environ.get('ARTIFACTORY_HOST'),
         os.environ.get('ARTIFACTORY_ML_REPO')
-    ]):
+    ]) and os.environ.get('UPLOAD_TO_ARTIFACTORY') == 'true':
         try:
             sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
             from utils.artifactory_helper import ArtifactoryHelper
             
             print("\nUploading model to Artifactory ML Repository...")
             helper = ArtifactoryHelper(
-                artifactory_artifactory_host=os.environ['ARTIFACTORY_artifactory_host'],
+                artifactory_host=os.environ['ARTIFACTORY_HOST'],
                 key_vault_name=os.environ['AZURE_KEY_VAULT_NAME'],
                 username_secret_name=os.environ.get('ARTIFACTORY_USERNAME_SECRET', 'artifactory-username'),
                 access_token_secret_name=os.environ.get('ARTIFACTORY_ACCESS_TOKEN_SECRET')

@@ -31,4 +31,5 @@ azureml:
 model:
   name: "PLACEHOLDER" # add a name for the resulting trained model
   version_format: "v{timestamp}"  # add a version format for the resulting trained model, with this example, versions will be generated with timestamp
+  upload_to_artifactory: true # set to true to upload the resulting trained model to artifactory
 

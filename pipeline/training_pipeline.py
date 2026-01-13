@@ -62,9 +62,9 @@ def training_pipeline():
         config = yaml.safe_load(f)
     
     # Get Artifactory Docker image
-    artifactory_artifactory_host = config['artifactory']['artifactory_host']
+    artifactory_host = config['artifactory']['artifactory_host']
     docker_repo = config['artifactory']['repositories']['docker']
-    docker_host = artifactory_artifactory_host.replace('https://', '').replace('http://', '')
+    docker_host = artifactory_host.replace('https://', '').replace('http://', '')
     image_name = config['artifactory']['image_name']
     image_tag = config['artifactory']['image_tag']
     docker_image = f"{docker_host}/{docker_repo}/{image_name}:{image_tag}"
@@ -80,12 +80,12 @@ def training_pipeline():
     # Build environment variables dictionary
     env_vars = {
         "AZURE_KEY_VAULT_NAME": config['key_vault']['name'],
-        "ARTIFACTORY_artifactory_host": config['artifactory']['artifactory_host'],
-        "ARTIFACTORY_PYPI_REPO": config['artifactory']['repositories']['pypi'],
+        "ARTIFACTORY_HOST": config['artifactory']['artifactory_host'],
         "ARTIFACTORY_ML_REPO": config['artifactory']['repositories']['ml'],
         "ARTIFACTORY_USERNAME_SECRET": config['key_vault']['secrets']['artifactory_username'],
         "MODEL_NAME": config['model']['name'],
-        "AZURE_CLIENT_ID": config['azureml']['compute']['managed_identity_client_id']
+        "AZURE_CLIENT_ID": config['azureml']['compute']['managed_identity_client_id'],
+        "UPLOAD_TO_ARTIFACTORY": config['model']['upload_to_artifactory']
     }
 
     
@@ -181,11 +181,11 @@ def main():
         if access_token and username:
             # Create workspace connection with username/password credentials
             credentials = UsernamePasswordConfiguration(username=username, password=access_token)
-            artifactory_artifactory_host = config['artifactory']['artifactory_host']
+            artifactory_host = config['artifactory']['artifactory_host']
             
             ws_connection = WorkspaceConnection(
                 name="JFrogArtifactory",
-                target=artifactory_artifactory_host,
+                target=artifactory_host,
                 type="GenericContainerRegistry",
                 credentials=credentials
             )
@@ -199,11 +199,11 @@ def main():
         elif username and password:
             # Use username/password if access token not available
             credentials = UsernamePasswordConfiguration(username=username, password=password)
-            artifactory_artifactory_host = config['artifactory']['artifactory_host']
+            artifactory_host = config['artifactory']['artifactory_host']
             
             ws_connection = WorkspaceConnection(
                 name="JFrogArtifactory",
-                target=artifactory_artifactory_host,
+                target=artifactory_host,
                 type="GenericContainerRegistry",
                 credentials=credentials
             )
