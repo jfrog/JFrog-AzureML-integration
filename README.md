@@ -297,6 +297,7 @@ source setup_venv.sh
 ```
 
 ### 2. Build, Tag and Push Docker Image
+This step builts the training image, you can use the example as-is or replace its training logic on `src/train.py` script.
 
 Build the Docker image with the specified tag. The build uses Docker secrets for secure pip configuration:
 
@@ -319,76 +320,18 @@ docker build \
 ```
 
 ### 3. Run Training Pipeline
+This step creats a new training job inside the AzureML workspace and runs it. the job uses the training docker container we built and pushed in the previous steps.
 
 #TODO: Remove the arti user and access and add just the secret name that Aviv is rotate. The user and the token should be included in the same value as in AWS.
 
-Clone config/config.example.yaml into config/config.yaml and update the missing placeholder values
+Clone config/config.example.yaml into config/config.yaml and update the missing 'PLACEHOLDER' values
 
 Submit the training pipeline to AzureML:
 
 ```bash
-python pipeline/training_pipeline.py
+    python pipeline/training_pipeline.py
 ```
-
-## Prerequisites
-
-- Docker with BuildKit enabled
-- Python 3.11+
-- Azure CLI configured
-- Access to Azure Key Vault
-- JFrog Artifactory account with appropriate repositories
-
-## Project Structure
-
-```
-.
-├── docker/
-│   └── Dockerfile          # Docker image configuration
-├── pipeline/
-│   └── training_pipeline.py # AzureML pipeline definition
-├── src/
-│   ├── train.py            # Model training script
-│   └── utils/
-│       └── artifactory_helper.py # Artifactory integration utilities
-├── config/
-│   └── config.yaml         # Configuration file
-├── pip.conf                # Pip configuration for Artifactory
-├── setup_env.sh            # Environment setup script
-└── requirements.txt        # Python dependencies
-```
-
-## Configuration
-
-### Pip Configuration
-
-The `pip.conf` file contains Artifactory PyPI repository configuration with embedded credentials. This file is used as a Docker secret during build.
-
-### Environment Setup
-
-The `setup_env.sh` script contains environment variables for:
-- Artifactory authentication
-- Azure service principal credentials
-- Repository names and endpoints
-
-**Security Note:** Do not commit `setup_env.sh` or `pip.conf` with real credentials to version control. These files should be in `.gitignore`.
-
-## Build Process
-
-The Docker build process:
-
-1. Uses Artifactory base image (if `ARTIFACTORY_DOCKER_REGISTRY` is provided)
-2. Mounts `pip.conf` as a Docker secret for secure credential handling
-3. Installs Python dependencies from Artifactory PyPI repository
-4. Copies application code and sets up the environment
-
-## Pipeline Execution
-
-The training pipeline:
-
-1. Pulls the Docker image from Artifactory
-2. Trains the ML model
-3. Uploads the trained model to Artifactory ML Repository
-4. Verifies the upload was successful
+Once the training pipeline completes you will get a URL for the Azure ML job it created, use that to open the training job and follow its progress.
 
 ## Troubleshooting
 
