@@ -17,16 +17,22 @@ graph TB
     subgraph "Build Phase"
         Dev[Developer/Local Machine]
         Docker[Docker BuildKit]
-        PipConf[pip.conf<br/>Docker repository Secret]
-        ArtifactoryPyPI[Artifactory<br/>PyPI Repository]
         BaseImage[Artifactory<br/>Base Image]
     end
 
-    subgraph "Azure Cloud"
+    subgraph "Train Pipeline"
+        TrainDev[Developer/Local Machine]
+        PipelineScript[Pipeline Script]        
+    end
+
+    subgraph "Azure Cloud Runtime"
         KV[Azure Key Vault<br/>Credentials Storage]
         AML[AzureML Workspace]
-        Compute[AzureML<br/>Compute Cluster]
-        MI[Managed Identity]
+        Compute[AzureML<br/>Compute Cluster with managed identity]
+        Container[Training Container]
+        TrainScript[train.py<br/>Model Training]
+        ArtifactoryHelper[ArtifactoryHelper<br/>frogml Integration]
+        Model[Model Artifacts<br/>model.pkl, metrics.json]
     end
 
     subgraph "Artifactory"
@@ -35,35 +41,29 @@ graph TB
         ArtifactoryML[Artifactory<br/>ML Repository]
     end
 
-    subgraph "Runtime Phase"
-        Container[Training Container]
-        TrainScript[train.py<br/>Model Training]
-        ArtifactoryHelper[ArtifactoryHelper<br/>frogml Integration]
-        Model[Model Artifacts<br/>model.pkl, metrics.json]
-    end
-
     %% Build Phase Flow
-    Dev -->|1. Build with mounted secrets| Docker
+    Dev -->|1. Build with mounted secrets from pip.conf| Docker
     BaseImage -->|2. Pull base image| Docker
-    Docker -->|3. Install packages| ArtifactoryPyPI
-    Docker -->|5. Build & push image| ArtifactoryDocker2
-    Dev -->|6. Push image| ArtifactoryDocker2
+    Docker -->|3. Install packages| ArtifactoryPyPI2
+    Docker -->|4. Build & push image| ArtifactoryDocker2
 
-    %% Authentication Flow
-    Dev -->|Service Principal| KV
-    MI -->|Managed Identity| KV
-    KV -->|Retrieve credentials| ArtifactoryHelper
-    KV -->|Retrieve credentials| Container
+    %% Train Phase Flow
+    TrainDev -->|1. Execure Train Pipeline| PipelineScript
+    PipelineScript -->|2. Submit Training Job| AML
+
+
 
     %% Runtime Phase Flow
-    AML -->|7. Submit pipeline| Compute
-    Compute -->|8. Pull image| ArtifactoryDocker2
-    Compute -->|9. Create container| Container
-    Container -->|10. Execute| TrainScript
-    TrainScript -->|11. Train model| Model
-    TrainScript -->|12. Upload model| ArtifactoryHelper
-    ArtifactoryHelper -->|13. Use frogml| ArtifactoryML
-    ArtifactoryHelper -->|14. Get credentials| KV
+    AML -->|1. Create Compute and Run Job| Compute
+    Compute -->|2. Get JFrog Credentials| KV
+    Compute -->|3. Pull image| ArtifactoryDocker2
+    Compute -->|4. Run container| Container
+    Container -->|5. Execute Train script| TrainScript
+    TrainScript -->|6. Train model| Model
+    TrainScript -->|7. Upload model| ArtifactoryHelper
+    ArtifactoryHelper -->|8. Get credentials| KV
+    ArtifactoryHelper -->|9. Upload model using FrogML| ArtifactoryML    
+    
 
     %% Styling
     classDef buildPhase fill:#e1f5ff,stroke:#01579b,stroke-width:2px
