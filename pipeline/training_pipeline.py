@@ -101,11 +101,11 @@ def training_pipeline():
         code="./src",
         command="python train.py",
         environment=env,
-        # outputs={
-        #     "model": Output(type="uri_file", path="outputs/model.pkl"),
-        #     "metrics": Output(type="uri_file", path="outputs/metrics.json"),
-        #     "metadata": Output(type="uri_file", path="outputs/metadata.json")
-        # },
+        outputs={
+            "model": Output(type="uri_file"),
+            "metrics": Output(type="uri_file"),
+            "metadata": Output(type="uri_file")
+        },
         environment_variables=env_vars
     )
     
@@ -144,8 +144,8 @@ def main():
             size=config['azureml']['compute']['vm_size'],
             min_instances=config['azureml']['compute']['min_nodes'],
             max_instances=config['azureml']['compute']['max_nodes'],
-            #identity=IdentityConfiguration(type="user_assigned",user_assigned_identities=[ManagedIdentityConfiguration(resource_id=config['azureml']['compute']['managed_identity'])])
-            identity=IdentityConfiguration(type="user_assigned",user_assigned_identities=[ManagedIdentityConfiguration(client=config['azureml']['compute']['managed_identity_client_id'])])
+            identity=IdentityConfiguration(type="user_assigned",user_assigned_identities=[ManagedIdentityConfiguration(resource_id=config['azureml']['compute']['managed_identity'])])
+            
         )
         ml_client.compute.begin_create_or_update(compute).result()
 
