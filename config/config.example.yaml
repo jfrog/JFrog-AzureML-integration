@@ -7,20 +7,18 @@ azure:
   location: "PLACEHOLDER"
 
 key_vault:
-  name: "PLACEHOLDER"
+  name: "PLACEHOLDER" # Name of the AzureML workspace Key Vault
   secrets:
     artifactory_username: "PLACEHOLDER"
-    artifactory_access_token: "PLACEHOLDER"  # Optional, preferred for frogml authentication
+    artifactory_access_token: "PLACEHOLDER"  
 
 artifactory:
   artifactory_host: "PLACEHOLDER"
   repositories:
-    pypi: "PLACEHOLDER"  # PyPI repository name
     docker: "PLACEHOLDER"  # Docker registry repository name
-    ml: "PLACEHOLDER"  # Machine Learning Repository name
-  image_name: "azureml-training"
-  image_tag: "PLACEHOLDER"
-  # Full URLs will be constructed as: {base_url}/artifactory/{repository_name}
+    ml: "PLACEHOLDER"  # Machine Learning Repository name, used for uploading the resulting trained models to artifactory
+  image_name: "azureml-training" # name of the training image, used for building the training container
+  image_tag: "PLACEHOLDER" # tag of the training image, used for building the training container
 
 azureml:
   compute:
@@ -31,6 +29,6 @@ azureml:
     managed_identity: "PLACEHOLDER" # use the resource id from the json view of the managed identity you created on the enviornment setup step 
     managed_identity_client_id: "PLACEHOLDER" # use the client id from the managed identity you created on the enviornment setup step   
 model:
-  name: "PLACEHOLDER"
-  version_format: "v{timestamp}"  # Version will be generated with timestamp
+  name: "PLACEHOLDER" # add a name for the resulting trained model
+  version_format: "v{timestamp}"  # add a version format for the resulting trained model, with this example, versions will be generated with timestamp
 
