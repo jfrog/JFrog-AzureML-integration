@@ -1,6 +1,12 @@
 # AzureML + JFrog Artifactory Integration (WIP)
 
-This project demonstrates integration between Azure Machine Learning (AzureML) and JFrog Artifactory for managing Python dependencies, Docker images, and AI model artifacts.
+This project demonstrates how to build and run Azure Machine Learning (AzureML) jobs while sourcing packages, images, and model artifacts from/to JFrog Artifactory.
+It focuses on secure credential handling, repeatable builds, and predictable promotion of trained models.
+
+What’s inside:
+- Opinionated Docker build that pulls base images and Python packages from Artifactory.
+- AzureML training pipeline example that runs a sample training script producing a trained Iris model in a managed compute cluster (serverless)
+- `frogml` JFrog SDK is used for working with Machine Learning models and datasets packages
 
 ## Architecture
 
@@ -11,9 +17,8 @@ graph TB
     subgraph "Build Phase"
         Dev[Developer/Local Machine]
         Docker[Docker BuildKit]
-        PipConf[pip.conf<br/>Docker Secret]
+        PipConf[pip.conf<br/>Docker repository Secret]
         ArtifactoryPyPI[Artifactory<br/>PyPI Repository]
-        ArtifactoryDocker[Artifactory<br/>Docker Registry]
         BaseImage[Artifactory<br/>Base Image]
     end
 
@@ -38,11 +43,10 @@ graph TB
     end
 
     %% Build Phase Flow
-    Dev -->|1. Build with secrets| Docker
-    PipConf -->|2. Mount as secret| Docker
-    BaseImage -->|3. Pull base image| Docker
-    Docker -->|4. Install packages| ArtifactoryPyPI
-    Docker -->|5. Build image| ArtifactoryDocker
+    Dev -->|1. Build with mounted secrets| Docker
+    BaseImage -->|2. Pull base image| Docker
+    Docker -->|3. Install packages| ArtifactoryPyPI
+    Docker -->|5. Build & push image| ArtifactoryDocker2
     Dev -->|6. Push image| ArtifactoryDocker2
 
     %% Authentication Flow
