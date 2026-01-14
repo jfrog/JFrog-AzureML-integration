@@ -81,57 +81,53 @@ graph TB
 
 #### Build Phase
 1. **Docker Build Process:**
-   - Uses Artifactory base image (`python:3.11-slim` from Artifactory Docker registry)
-   - Mounts `pip.conf` as Docker secret (secure credential handling)
+   - Mounts `pip.conf` as a Docker secret for secure credential handling
+   - Uses base image from JFrog Artifactory (e.g. `python:3.11-slim` from Artifactory Docker registry)
    - Installs Python packages from Artifactory PyPI repository during build
-   - Creates multi-stage Docker image with optimized layers
-
-2. **Image Push:**
-   - Built image is tagged and pushed to Artifactory Docker registry
-   - Image is ready for use in AzureML pipelines
+   - Creates multi-stage Docker image with optimized layers and pushes it to JFrog docker registry
+   
+   Result: Image is ready for use in AzureML pipelines! 
+   
+   *At this point, the image will potentially be scanned by JFrog Xray and undergo the customer's SDLC pipeline  
+   
 
 #### Runtime Phase
-1. **AzureML Pipeline Execution:**
-   - Pipeline pulls Docker image from Artifactory Docker registry
-   - AzureML compute cluster creates container from the image
-   - Container executes training script (`train.py`)
+1. **Train Pipeline:**
+   - A Developer or a CI job runs the Pipeline script 
+   - The Pipeline script submits a training job to AzureML workspace
+   - The AzureML workspace Creates a compute cluster and runs the training job on it
+   - AzureML compute cluster:
+        - Retrieves JFrog short lived credentials from AzureML Workspace Key Vault
+        - Pulls the training image from Artifactory Docker registry
+        - Runs the training image
+   - The training container executes the training script (`train.py`)
 
 2. **Model Training & Upload:**
-   - Training script trains ML model (Iris classifier)
+   - Training script trains ML model (e.g. Iris classifier)
    - Model artifacts are generated (model.pkl, metrics.json, metadata.json)
-   - `ArtifactoryHelper` class retrieves credentials from Azure Key Vault
+   - `ArtifactoryHelper` class retrieves JFrog short lived credentials from AzureML Workspace Key Vault
    - Model is uploaded to Artifactory ML Repository using `frogml` package
 
 #### Authentication & Security
-1. **Azure Key Vault:**
-   - Stores all Artifactory credentials securely
-   - Supports multiple authentication methods:
-     - Username/Password
-     - API Key
-     - Access Token (preferred for frogml)
+1. **AzureML Workspace Key Vault:**
+   - Stores Artifactory Access Token and Username securely
+   - The JFrog short lived Access Token is added and rotated automatically through an Azure function based on OIDC token exchnage protocol. 
+
 
 2. **Authentication Methods:**
-   - **Local Development:** Uses Service Principal (Client ID/Secret)
-   - **AzureML Runtime:** Uses Managed Identity (automatic, no credentials needed)
+   - **Local Development:** Uses Azure Service Principal
+   - **AzureML Runtime:** Uses Managed Identity (automatic, no credentials needed) for retrieveing JFrog short lived & auto-rotating token from the AzureML Workspace Key Vault  
    - **Docker Build:** Uses Docker secrets (credentials not stored in image)
 
-#### Data Flow
-1. **Build Time:**
-   - Base image → Artifactory Docker Registry
-   - Python packages → Artifactory PyPI Repository
-   - Credentials → Docker secrets (not stored in image)
-
-2. **Runtime:**
-   - Docker image → Artifactory Docker Registry → AzureML Compute
-   - Credentials → Azure Key Vault → Container (via Managed Identity)
-   - Trained model → Artifactory ML Repository (via frogml)
 
 ### Key Integration Points
 
 - **Docker Images:** Pulled from Artifactory Docker registry during pipeline execution
 - **Python Packages:** Installed from Artifactory PyPI repository during Docker build
-- **ML Models:** Uploaded to Artifactory ML Repository using frogml SDK
-- **Credentials:** Retrieved from Azure Key Vault using Managed Identity or Service Principal
+- **Docker Base Images:** Pulled from Artifactory Docker registry during Docker build
+- **Used Models & Datasets:** Pulled from Artifactory using Frogml SDK
+- **Resulting Models:** Uploaded to Artifactory ML Repository using Frogml SDK
+- **JFrog Credentials:** Retrieved from AzureML Workspace Key Vault using Managed Identity or Service Principal
 
 ### Sequence Diagram
 
@@ -153,8 +149,7 @@ sequenceDiagram
     Dev->>Docker: Build with pip.conf secret
     Docker->>ArtDocker: Pull base image
     Docker->>ArtPyPI: Install packages from PyPI repo
-    Docker->>ArtDocker: Build & tag image
-    Dev->>ArtDocker: Push image to registry
+    Docker->>ArtDocker: Build, tag and push image
 
     Note over AML,ArtML: Runtime Phase
     Dev->>AML: Submit training pipeline
@@ -166,106 +161,42 @@ sequenceDiagram
     Container->>Container: Execute train.py
     Container->>Container: Train ML model
     Container->>KV: Get credentials for upload
-    KV-->>Container: Return access token
+    KV-->>Container: Return Artifactory credentials
     Container->>ArtML: Upload model (via frogml)
     ArtML-->>Container: Confirm upload
     Container->>AML: Return pipeline outputs
     AML-->>Dev: Pipeline completed
 ```
 
-### Component Details
+### Architectual decisions explained
 
 #### Docker Build Process
-- **Multi-stage build** for optimized image size
-- **Docker secrets** for secure credential passing (pip.conf)
-- **Artifactory base image** from Docker registry
-- **Package installation** from Artifactory PyPI during build
+- **Multi-stage build** This example uses a multi staged docker build for optimized image size.
+- **Docker secrets** Using a docker secret for allowing the access into the JFrog private registry allows for a secure credential passing (pip.conf) without the secret leaving traces on the created image.
+- **Artifactory base image** Using a base image pulled from the JFrog Docker registry assures security protection for used images i.e. Xray and Curation.
+- **Package installation** Python packages are pulled through Artifactory PyPI repository during build for security and control reasons providing protections against harmfull external dependencies.
 
-#### AzureML Pipeline
-- **Environment:** Custom Docker image from Artifactory
-- **Compute:** AzureML compute cluster with Managed Identity
-- **Outputs:** Model files, metrics, and metadata
-- **Authentication:** Automatic via Managed Identity
-
-#### Artifactory Integration
-- **Docker Registry:** Stores and serves Docker images
-- **PyPI Repository:** Proxies Python packages
-- **ML Repository:** Stores trained ML models with versioning
-- **Authentication:** Multiple methods supported (token preferred)
+#### AzureML Training Pipeline
+- **Environment:** Using a Custom Docker image from Artifactory allows for tracability, management and repeatability of the training process along with security protections as described above.
+- **Compute:** AzureML compute cluster with Managed Identity allows for passwordless and seameless operation of the training process when working with Azure and with JFrog services.
+- **Outputs:** Model files, metrics, and metadata produced by the training process allows deep analytics and understanding of the training process for evaluating the resulting models.
 
 #### Security Model
 - **Build Time:** Docker secrets (credentials not in image layers)
 - **Runtime:** Azure Key Vault + Managed Identity (no hardcoded secrets)
 - **Network:** All communications over HTTPS
 - **Access Control:** Role-based access via Azure and Artifactory
+- **Used Credentials:** Short lived JFrog Access Token auto-rotated by Azure function. with token rotation based on OIDC and Azure App. registration & Managed Identity
 
-### Text-Based Architecture Overview
 
-For environments where Mermaid diagrams don't render, here's a text-based representation:
+### JFrog Repositories Used
+- **Docker Registry:** Stores and serves Docker images, preferably use a virtual docker repository to simplify usage
+- **PyPI Remote/Virtual Repository:** Proxies Python packages used by the training scripts
+- **ML Repository:** Stores trained ML models with versioning
+- **HuggingFace Repository:** Proxies HF packages used by the training script
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        BUILD PHASE                               │
-└─────────────────────────────────────────────────────────────────┘
-
-Developer Machine
-    │
-    ├─► Docker BuildKit
-    │       │
-    │       ├─► Pull Base Image ──────────┐
-    │       │                              │
-    │       ├─► Mount pip.conf (secret)   │
-    │       │                              │
-    │       └─► Install packages ──────────┼─► Artifactory PyPI
-    │                                      │
-    └─► Push Image ────────────────────────┼─► Artifactory Docker Registry
-                                           │
-                                           │
-┌─────────────────────────────────────────────────────────────────┐
-│                       RUNTIME PHASE                              │
-└─────────────────────────────────────────────────────────────────┘
-
-AzureML Workspace
-    │
-    ├─► Submit Pipeline
-    │       │
-    │       └─► Compute Cluster
-    │               │
-    │               ├─► Pull Image ────────┐
-    │               │                       │
-    │               └─► Create Container   │
-    │                       │              │
-    │                       ├─► Get Credentials ──┐
-    │                       │                      │
-    │                       ├─► Execute train.py  │
-    │                       │       │              │
-    │                       │       ├─► Train Model
-    │                       │       │
-    │                       │       └─► Upload Model ──┐
-    │                       │                           │
-    │                       └───────────────────────────┼─► Artifactory ML Repository
-    │                                                   │
-    └───────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────┐
-│                    AUTHENTICATION FLOW                           │
-└─────────────────────────────────────────────────────────────────┘
-
-Azure Key Vault (Credentials Storage)
-    │
-    ├─► Artifactory Username
-    ├─► Artifactory Password
-    ├─► Artifactory Access Token (preferred)
-    └─► Artifactory API Key (optional)
-
-    Access Methods:
-    • Local Dev: Service Principal (Client ID/Secret)
-    • AzureML: Managed Identity (automatic)
-    • Docker Build: Docker Secrets (not stored in image)
-```
 
 ## Quick Start
-
 
 ### Intiliaze Setup Environment (R&R: Azure Administrator)
 ### Prerequisites
