@@ -10,6 +10,10 @@ This pipeline demonstrates:
 from datetime import datetime
 import os
 import uuid
+import json
+import tempfile
+import shutil
+import glob
 
 from azure.ai.ml import Input, MLClient, Output, command, dsl
 from azure.ai.ml.constants._common import IdentityType
@@ -94,26 +98,31 @@ def training_pipeline():
         env_vars["ARTIFACTORY_ACCESS_TOKEN_SECRET"] = config['key_vault']['secrets']['artifactory_access_token']
     
     # Create training command component
-    train_cmd = command(
-        name="train_and_upload_model",
-        display_name="Train ML Model and Upload to Artifactory",
-        description="Train ML model and upload to Artifactory ML Repository",
-        code="./src",
-        command="python train.py",
-        environment=env,
-        outputs={
-            "model": Output(type="uri_file"),
-            "metrics": Output(type="uri_file"),
-            "metadata": Output(type="uri_file")
-        },
-        environment_variables=env_vars
-    )
+        train_cmd = command(
+            name="train_and_upload_model",
+            display_name="Train ML Model and Upload to Artifactory",
+            description="Train ML model and upload to Artifactory ML Repository",
+            code="./src",
+            command="python train.py --metadata_out ${{outputs.metadata}}",
+            environment=env,
+            outputs={
+        "metadata": Output(
+            type="uri_file", 
+            mode="upload",
+            # Ensure the datastore part 'workspaceblobstore' is exactly as named in your workspace
+            path="azureml://datastores/workspaceblobstore/paths/outputs/metadata.json"
+        )
+    },
+            environment_variables=env_vars
+        )
     
     # Create the training step
     train_step = train_cmd()
     train_step.compute = config['azureml']['compute']['cluster_name']
     
-    return train_step
+    return {
+        "metadata": train_step.outputs.metadata
+    }
 
 def main():
     """Main function to submit the pipeline."""
@@ -169,13 +178,7 @@ def main():
                 print(f"Warning: Could not retrieve access token: {e}")
         
         username = None
-        password = None
-        
-        if 'artifactory_username' in config['key_vault']['secrets']:
-            try:
-                username = kv_client.get_secret(config['key_vault']['secrets']['artifactory_username']).value
-            except Exception as e:
-                print(f"Warning: Could not retrieve username: {e}")
+
         
         # Prefer access token for API key auth, fallback to username/password
         if access_token and username:
@@ -196,28 +199,9 @@ def main():
             except Exception as e:
                 print(f"Warning: Could not create workspace connection: {e}")
                 print("  You may need to configure Docker registry authentication manually")
-        elif username and password:
-            # Use username/password if access token not available
-            credentials = UsernamePasswordConfiguration(username=username, password=password)
-            artifactory_host = config['artifactory']['artifactory_host']
+
             
-            ws_connection = WorkspaceConnection(
-                name="JFrogArtifactory",
-                target=artifactory_host,
-                type="GenericContainerRegistry",
-                credentials=credentials
-            )
-            
-            try:
-                ml_client.connections.create_or_update(ws_connection)
-                print("✓ Workspace connection created/updated for Artifactory (using username/password)")
-            except Exception as e:
-                print(f"Warning: Could not create workspace connection: {e}")
-                print("  You may need to configure Docker registry authentication manually")
-        else:
-            print("Warning: No credentials found. Docker image pull may fail.")
-            print("  Ensure your Artifactory registry allows anonymous access or configure authentication manually")
-    
+   
     except Exception as e:
         print(f"Warning: Could not set up workspace connection: {e}")
         print("  Docker image pull may fail if authentication is required")
@@ -232,6 +216,82 @@ def main():
     print(f"Pipeline submitted: {submitted_job.name}")
     print(f"Job ID: {submitted_job.name}")
     print(f"View in Azure Portal: {submitted_job.studio_url}")
+    print("\n" + "=" * 60)
+    print("Waiting for pipeline to complete...")
+    print("=" * 60)
+    
+    # Wait for the pipeline to complete and extract model information
+    print("\n💡 Tip: You can check the pipeline status in Azure Portal or wait for it to complete.")
+    print("   After completion, model name and version will be displayed below.\n")
+    
+    # Optionally wait for completion (user can interrupt with Ctrl+C)
+    try:
+        print("Waiting for pipeline to complete (press Ctrl+C to exit and check later)...")
+        ml_client.jobs.stream(submitted_job.name)
+    except KeyboardInterrupt:
+        print("\n⚠️  Pipeline streaming interrupted.")
+        print("   You can check the status in Azure Portal and get model info from the metadata output.")
+    
+    # Try to get model information from the completed job
+    try:
+        completed_job = ml_client.jobs.get(submitted_job.name)
+        
+        if completed_job.status == "Completed":
+            print("\n" + "=" * 60)
+            print("✓ Training Pipeline Completed Successfully!")
+            print("=" * 60)
+            
+            # Extract model name and version from metadata output
+            # Create a temporary directory to download the metadata
+            temp_dir = "./downloaded_artifacts"
+            os.makedirs(temp_dir, exist_ok=True)
+            
+            try:
+                    # Download the metadata output
+                    ml_client.jobs.download(
+                    name=submitted_job.name,
+                    download_path=temp_dir,
+                    output_name="metadata") # This is the name of the output in the pipeline
+
+                    metadata_file_path = os.path.join(temp_dir, "named-outputs", "metadata", "metadata.json")
+                    
+                    if os.path.exists(metadata_file_path):
+                        with open(metadata_file_path, "r") as f:
+                            data = json.load(f)
+                        model_name = data.get('model_name')
+                        model_version = data.get('version')
+                        print(f"Retrieved Model: {model_name}, Version: {model_version}")
+                        
+                        print(f"\n📦 Model Information:")
+                        print(f"   Model Name: {model_name}")
+                        print(f"   Model Version: {model_version}")
+                        print(f"\n🚀 To deploy this model, run:")
+                        print(f"   python pipeline/deployment_pipeline.py --model-name {model_name} --model-version {model_version}")
+                        print("\n" + "=" * 60)
+                    else:
+                        print(f"Error: Could not find metadata.json in {output_dir}")
+                        print(f"   Check the metadata output in Azure Portal for the version.")
+                        print(f"   The version format is: vYYYYMMDDHHMMSS (e.g., v20260118123456)")
+            except Exception as e:
+                  print(f"Error: Could not download metadata output: {e}")
+                  print(f"   Check Azure Portal for pipeline status: {submitted_job.studio_url}")
+                  print(f"   Once completed, you can:")
+                  print(f"   1. Download the metadata output from Azure Portal")
+                  print(f"   2. Or check the training job logs for the version (format: vYYYYMMDDHHMMSS)")
+                  print(f"   3. Model name is: {config['model']['name']}")
+        elif completed_job.status == "Failed":
+            print(f"\n❌ Pipeline failed. Check Azure Portal for details: {submitted_job.studio_url}")
+        else:
+            print(f"\n⏳ Pipeline status: {completed_job.status}")
+            print(f"   Check Azure Portal for details: {submitted_job.studio_url}")
+            print(f"   Once completed, check the metadata output for model name and version.")
+    except Exception as e:
+        print(f"\n⚠️  Could not retrieve job status: {e}")
+        print(f"   Check Azure Portal for pipeline status: {submitted_job.studio_url}")
+        print(f"   Once completed, you can:")
+        print(f"   1. Download the metadata output from Azure Portal")
+        print(f"   2. Or check the training job logs for the version (format: vYYYYMMDDHHMMSS)")
+        print(f"   3. Model name is: {config['model']['name']}")
     
     return submitted_job
 

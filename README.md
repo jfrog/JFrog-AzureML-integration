@@ -268,6 +268,10 @@ Submit the training pipeline to AzureML:
 ```
 Once the training pipeline completes you will get a URL for the Azure ML job it created, use that to open the training job and follow its progress.
 
+Deployment (with specific version):
+```bash
+python pipeline/deployment_pipeline.py --model-name iris-classifier --model-version v20260118123456
+```
 ## Troubleshooting
 
 ### Docker Build Issues
