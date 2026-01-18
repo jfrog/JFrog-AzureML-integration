@@ -225,14 +225,14 @@ class ArtifactoryHelper:
             # Try using frogml to verify model existence
             if FROGML_AVAILABLE:
                 try:
-                    # Use frogml.files.get_model_version() to check if model exists
-                    model_version = frogml.files.get_model_version(
+                    # Use frogml.files.get_model_info() to check if model exists
+                    model_info = frogml.files.get_model_info(
                         repository=ml_repo_name,
                         model_name=model_name,
                         version=version
                     )
-                    # If we can get the model version, it exists
-                    return model_version is not None
+                    # If we can get the model info, it exists
+                    return model_info is not None
                 except (AttributeError, Exception) as e:
                     # frogml method may not be available or model doesn't exist
                     # Fall back to REST API
@@ -251,7 +251,7 @@ class ArtifactoryHelper:
     ) -> str:
         """
         Download model from Artifactory Machine Learning Repository using frogml.
-        Uses frogml.files.download_model() or frogml.files.get_model_version().download().
+        Uses frogml.files.load_model().
         
         Args:
             ml_repo_name: Name of the ML repository
@@ -275,26 +275,19 @@ class ArtifactoryHelper:
         os.makedirs(download_path, exist_ok=True)
         
         try:
-            # Try using frogml.files.download_model() first
-            try:
-                frogml.files.download_model(
-                    repository=ml_repo_name,
-                    model_name=model_name,
-                    version=version,
-                    destination_path=download_path
-                )
-            except AttributeError:
-                # If download_model doesn't exist, try get_model_version().download()
-                model_version = frogml.files.get_model_version(
-                    repository=ml_repo_name,
-                    model_name=model_name,
-                    version=version
-                )
-                if filename:
-                    target_path = os.path.join(download_path, filename)
-                else:
-                    target_path = download_path
-                model_version.download(target_path)
+            # Use frogml.files.load_model() - the correct API method
+            target_path = download_path
+            if filename:
+                target_path = os.path.join(download_path, filename)
+                # Ensure parent directory exists
+                os.makedirs(os.path.dirname(target_path), exist_ok=True)
+            
+            frogml.files.load_model(
+                repository=ml_repo_name,
+                model_name=model_name,
+                version=version,
+                target_path=target_path
+            )
             
             # Determine the downloaded file path
             if filename:

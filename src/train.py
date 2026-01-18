@@ -6,6 +6,7 @@ Trains a scikit-learn model on the Iris dataset and saves the model.
 import os
 import pickle
 import json
+import argparse
 from datetime import datetime
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
@@ -23,6 +24,11 @@ def train_model(output_dir: str = "./outputs") -> dict:
     Returns:
         Dictionary with model information and metrics
     """
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--metadata_out", type=str, help="Path provided by Azure ML")
+    args = parser.parse_args()
+
+    metadata = {"model_name": "example", "version": "1.0.0"}
     # Create output directory
     os.makedirs(output_dir, exist_ok=True)
     
@@ -90,6 +96,10 @@ def train_model(output_dir: str = "./outputs") -> dict:
     metadata_path = os.path.join(output_dir, "metadata.json")
     with open(metadata_path, 'w') as f:
         json.dump(metadata, f, indent=2)
+
+    with open(args.metadata_out, 'w') as f:
+        json.dump(metadata, f)  
+    
     print(f"Metadata saved to {metadata_path}")
     
     return {

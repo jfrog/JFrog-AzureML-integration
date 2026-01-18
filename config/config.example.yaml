@@ -27,7 +27,8 @@ azureml:
     min_nodes: 0
     max_nodes: 1
     managed_identity: "PLACEHOLDER" # use the resource id from the json view of the managed identity you created on the enviornment setup step 
-    managed_identity_client_id: "PLACEHOLDER" # use the client id from the managed identity you created on the enviornment setup step   
+    managed_identity_client_id: "PLACEHOLDER" # use the client id from the managed identity you created on the enviornment setup step
+    
 model:
   name: "PLACEHOLDER" # add a name for the resulting trained model
   version_format: "v{timestamp}"  # add a version format for the resulting trained model, with this example, versions will be generated with timestamp
