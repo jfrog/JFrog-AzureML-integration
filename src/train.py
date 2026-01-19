@@ -7,7 +7,7 @@ import os
 import pickle
 import json
 import argparse
-from datetime import datetime
+from datetime import datetime, timezone
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
@@ -75,7 +75,7 @@ def train_model(output_dir: str = "./outputs") -> dict:
         'n_estimators': 100,
         'training_samples': int(X_train.shape[0]),
         'test_samples': int(X_test.shape[0]),
-        'timestamp': datetime.utcnow().isoformat()
+        'timestamp': datetime.now(timezone.utc).isoformat()
     }
     
     metrics_path = os.path.join(output_dir, "metrics.json")
@@ -86,11 +86,11 @@ def train_model(output_dir: str = "./outputs") -> dict:
     # Create metadata for Artifactory
     metadata = {
         'model_name': 'iris-classifier',
-        'version': datetime.utcnow().strftime('v%Y%m%d%H%M%S'),
+        'version': datetime.now(timezone.utc).strftime('v%Y%m%d%H%M%S'),
         'model_type': 'RandomForestClassifier',
         'dataset': 'Iris',
         'accuracy': float(accuracy),
-        'training_date': datetime.utcnow().strftime('%Y%m%d%H%M%S'),
+        'training_date': datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S'),
         'features': iris.feature_names,
         'target_classes': iris.target_names.tolist()
     }
@@ -100,7 +100,7 @@ def train_model(output_dir: str = "./outputs") -> dict:
         json.dump(metadata, f, indent=2)
 
     with open(output_file_path, 'w') as f:
-        json.dump(metadata, f, indent=2)
+        json.dump(metadata, f)
     print(f"Metadata saved to {metadata_path}")
     
     return {
