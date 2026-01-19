@@ -1,1 +1,0 @@
-{"model_name": "iris-classifier", "version": "v20260118215218", "model_type": "RandomForestClassifier", "dataset": "Iris", "accuracy": 1.0, "training_date": "20260118215218", "features": ["sepal length (cm)", "sepal width (cm)", "petal length (cm)", "petal width (cm)"], "target_classes": ["setosa", "versicolor", "virginica"]}
