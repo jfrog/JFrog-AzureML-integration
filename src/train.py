@@ -20,15 +20,17 @@ def train_model(output_dir: str = "./outputs") -> dict:
     
     Args:
         output_dir: Directory to save the model and metrics
+        metadata_out_path: Optional path to write metadata.json (for AzureML output)
         
     Returns:
         Dictionary with model information and metrics
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument("--metadata_out", type=str, help="Path provided by Azure ML")
+    parser.add_argument("--metadata_dir", type=str, help="Path provided by Azure ML")
     args = parser.parse_args()
+    # Create the specific filename inside the directory provided by Azure
+    output_file_path = os.path.join(args.metadata_dir, "metadata.json")
 
-    metadata = {"model_name": "example", "version": "1.0.0"}
     # Create output directory
     os.makedirs(output_dir, exist_ok=True)
     
@@ -97,9 +99,8 @@ def train_model(output_dir: str = "./outputs") -> dict:
     with open(metadata_path, 'w') as f:
         json.dump(metadata, f, indent=2)
 
-    with open(args.metadata_out, 'w') as f:
-        json.dump(metadata, f)  
-    
+    with open(output_file_path, 'w') as f:
+        json.dump(metadata, f, indent=2)
     print(f"Metadata saved to {metadata_path}")
     
     return {

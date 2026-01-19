@@ -103,7 +103,7 @@ def training_pipeline():
             display_name="Train ML Model and Upload to Artifactory",
             description="Train ML model and upload to Artifactory ML Repository",
             code="./src",
-            command="python train.py --metadata_out ${{outputs.metadata}}",
+            command="python train.py --metadata_dir ${{outputs.metadata}}",
             environment=env,
             outputs={
         "metadata": Output(
