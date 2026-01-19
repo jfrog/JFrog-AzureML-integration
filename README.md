@@ -82,7 +82,7 @@ graph TB
 #### Build Phase
 1. **Docker Build Process:**
    - Mounts `pip.conf` as a Docker secret for secure credential handling
-   - Uses base image from JFrog Artifactory (e.g. `python:3.11-slim` from Artifactory Docker registry)
+   - Uses base image from JFrog Artifactory (e.g. `python:3.13.11-slim` from Artifactory Docker registry)
    - Installs Python packages from Artifactory PyPI repository during build
    - Creates multi-stage Docker image with optimized layers and pushes it to JFrog docker registry
    
@@ -106,28 +106,37 @@ graph TB
    - Training script trains ML model (e.g. Iris classifier)
    - Model artifacts are generated (model.pkl, metrics.json, metadata.json)
    - `ArtifactoryHelper` class retrieves JFrog short lived credentials from AzureML Workspace Key Vault
-   - Model is uploaded to Artifactory ML Repository using `frogml` package
+   - [optional] Model is uploaded to Artifactory ML Repository using `frogml` package
 
 #### Authentication & Security
-1. **AzureML Workspace Key Vault:**
+1. **AzureML Workspace's Azure Key Vault:**
    - Stores Artifactory Access Token and Username securely
    - The JFrog short lived Access Token is added and rotated automatically through an Azure function based on OIDC token exchnage protocol. 
 
 
 2. **Authentication Methods:**
-   - **Local Development:** Uses Azure Service Principal
+   - **Local Development:** Uses Azure user or application registry credentials (e.g. az login)
    - **AzureML Runtime:** Uses Managed Identity (automatic, no credentials needed) for retrieveing JFrog short lived & auto-rotating token from the AzureML Workspace Key Vault  
    - **Docker Build:** Uses Docker secrets (credentials not stored in image)
 
 
 ### Key Integration Points
 
+#### JFrog Repositories Used
+- **Docker Registry:** Stores and serves Docker images, preferably use a virtual docker repository to simplify usage
+- **PyPI Remote/Virtual Repository:** Proxies Python packages used by the training scripts
+- **ML Repository:** Stores trained ML models with versioning
+- **HuggingFace Repository:** Proxies HF packages used by the training script
+
+#### Packages 
 - **Docker Images:** Pulled from Artifactory Docker registry during pipeline execution
 - **Python Packages:** Installed from Artifactory PyPI repository during Docker build
 - **Docker Base Images:** Pulled from Artifactory Docker registry during Docker build
 - **Used Models & Datasets:** Pulled from Artifactory using Frogml SDK
 - **Resulting Models:** Uploaded to Artifactory ML Repository using Frogml SDK
-- **JFrog Credentials:** Retrieved from AzureML Workspace Key Vault using Managed Identity or Service Principal
+
+#### Authentication
+- **JFrog Credentials:** Token exchange is based on OIDC
 
 ### Sequence Diagram
 
@@ -174,7 +183,7 @@ sequenceDiagram
 - **Multi-stage build** This example uses a multi staged docker build for optimized image size.
 - **Docker secrets** Using a docker secret for allowing the access into the JFrog private registry allows for a secure credential passing (pip.conf) without the secret leaving traces on the created image.
 - **Artifactory base image** Using a base image pulled from the JFrog Docker registry assures security protection for used images i.e. Xray and Curation.
-- **Package installation** Python packages are pulled through Artifactory PyPI repository during build for security and control reasons providing protections against harmfull external dependencies.
+- **Package installation** Python packages are pulled through Artifactory PyPI repository during build for security and control reasons, providing protections against harmfull external dependencies.
 
 #### AzureML Training Pipeline
 - **Environment:** Using a Custom Docker image from Artifactory allows for tracability, management and repeatability of the training process along with security protections as described above.
@@ -189,11 +198,6 @@ sequenceDiagram
 - **Used Credentials:** Short lived JFrog Access Token auto-rotated by Azure function. with token rotation based on OIDC and Azure App. registration & Managed Identity
 
 
-### JFrog Repositories Used
-- **Docker Registry:** Stores and serves Docker images, preferably use a virtual docker repository to simplify usage
-- **PyPI Remote/Virtual Repository:** Proxies Python packages used by the training scripts
-- **ML Repository:** Stores trained ML models with versioning
-- **HuggingFace Repository:** Proxies HF packages used by the training script
 
 
 ## Quick Start
