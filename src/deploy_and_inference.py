@@ -162,17 +162,20 @@ def main():
         help='Model version in Artifactory'
     )
     parser.add_argument(
-        '--output-dir',
+        '--inference_results_dir',
         type=str,
         default=None,
-        help='Output directory for inference results (default: AZUREML_SCRIPT_OUTPUT_DIR or ./outputs)'
+        help='Inference results directory (default: AZUREML_SCRIPT_OUTPUT_DIR or ./outputs)'
     )
     
     args = parser.parse_args()
     
     # Determine output directory
-    output_dir = args.output_dir
+    output_dir = os.environ.get('AZUREML_SCRIPT_OUTPUT_DIR', './outputs')
     os.makedirs(output_dir, exist_ok=True)
+
+    inference_results_dir = args.inference_results_dir
+    os.makedirs(inference_results_dir, exist_ok=True)
     
     print("=" * 60)
     print("Deployment and Batch Inference")
@@ -226,7 +229,7 @@ def main():
         
         # Step 4: Save results
         print("\n[Step 4] Saving inference results...")
-        results_path = os.path.join(output_dir, 'inference_results.json')
+        results_path = os.path.join(inference_results_dir, 'inference_results.json')
         with open(results_path, 'w') as f:
             json.dump(inference_results, f, indent=2)
         

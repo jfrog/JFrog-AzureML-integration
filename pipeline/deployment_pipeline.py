@@ -105,7 +105,7 @@ def deployment_pipeline(
         display_name="Deploy Model and Run Batch Inference",
         description="Download model from Artifactory, deploy to compute, and run batch inference",
         code="./src",
-        command="python deploy_and_inference.py --model-name ${{inputs.model_name}} --model-version ${{inputs.model_version}} --output-dir ${{outputs.inference_results}}",
+        command="python deploy_and_inference.py --model-name ${{inputs.model_name}} --model-version ${{inputs.model_version}} --inference_results_dir ${{outputs.inference_results}}",
         environment=env,
         inputs={
             "model_name": Input(type="string"),
@@ -139,6 +139,7 @@ def main():
     parser = argparse.ArgumentParser(description='Submit deployment and inference pipeline')
     parser.add_argument('--model-name', type=str, default=None, help='Model name in Artifactory')
     parser.add_argument('--model-version', type=str, required=True, help='Model version in Artifactory (required)')
+    #parser.add_argument('--inference-results-dir', type=str, default=None, help='Inference results directory')
     args = parser.parse_args()
     
     # Load configuration
