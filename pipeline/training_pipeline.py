@@ -77,7 +77,6 @@ def training_pipeline():
     # Note: AzureML will need to authenticate to pull from Artifactory
     # This is typically handled via image pull secrets or managed identity
     env = Environment(
-        name="artifactory-training-env",
         image=docker_image
     )
     
@@ -107,10 +106,10 @@ def training_pipeline():
             environment=env,
             outputs={
         "metadata": Output(
-            type="uri_file", 
+            type="uri_folder", 
             mode="upload",
             # Ensure the datastore part 'workspaceblobstore' is exactly as named in your workspace
-            path="azureml://datastores/workspaceblobstore/paths/outputs/metadata.json"
+            #path="azureml://datastores/workspaceblobstore/paths/outputs/metadata_dir/"
         )
     },
             environment_variables=env_vars
@@ -269,7 +268,7 @@ def main():
                         print(f"   python pipeline/deployment_pipeline.py --model-name {model_name} --model-version {model_version}")
                         print("\n" + "=" * 60)
                     else:
-                        print(f"Error: Could not find metadata.json in {output_dir}")
+                        print(f"Error: Could not find metadata.json in {temp_dir}")
                         print(f"   Check the metadata output in Azure Portal for the version.")
                         print(f"   The version format is: vYYYYMMDDHHMMSS (e.g., v20260118123456)")
             except Exception as e:

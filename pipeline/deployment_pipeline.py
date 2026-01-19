@@ -68,7 +68,6 @@ def deployment_pipeline(
     
     # Create environment with Docker image from Artifactory
     env = Environment(
-        name="artifactory-training-env",
         image=docker_image
     )
     
