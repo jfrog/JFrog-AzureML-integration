@@ -171,7 +171,7 @@ def main():
     args = parser.parse_args()
     
     # Determine output directory
-    output_dir = args.output_dir or os.environ.get('AZUREML_SCRIPT_OUTPUT_DIR', 'outputs')
+    output_dir = args.output_dir
     os.makedirs(output_dir, exist_ok=True)
     
     print("=" * 60)

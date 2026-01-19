@@ -32,6 +32,8 @@ import logging
 # Suppress AzureML SDK experimental class warnings
 warnings.filterwarnings('ignore', message='.*experimental class.*')
 warnings.filterwarnings('ignore', message='.*experimental.*')
+warnings.filterwarnings('ignore', message='.*pathOnCompute.*')
+warnings.filterwarnings('ignore', message='.*not a known attribute.*')
 
 # Suppress specific AzureML SDK warnings
 logging.getLogger('azure.ai.ml').setLevel(logging.ERROR)

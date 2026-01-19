@@ -24,6 +24,8 @@ import logging
 # Suppress AzureML SDK experimental class warnings
 warnings.filterwarnings('ignore', message='.*experimental class.*')
 warnings.filterwarnings('ignore', message='.*experimental.*')
+warnings.filterwarnings('ignore', message='.*pathOnCompute.*')
+warnings.filterwarnings('ignore', message='.*not a known attribute.*')
 
 # Suppress specific AzureML SDK warnings
 logging.getLogger('azure.ai.ml').setLevel(logging.ERROR)
@@ -103,14 +105,15 @@ def deployment_pipeline(
         display_name="Deploy Model and Run Batch Inference",
         description="Download model from Artifactory, deploy to compute, and run batch inference",
         code="./src",
-        command="python deploy_and_inference.py --model-name ${{inputs.model_name}} --model-version ${{inputs.model_version}}",
+        command="python deploy_and_inference.py --model-name ${{inputs.model_name}} --model-version ${{inputs.model_version}} --output-dir ${{outputs.inference_results}}",
         environment=env,
         inputs={
             "model_name": Input(type="string"),
             "model_version": Input(type="string")
         },
         outputs={
-            "inference_results": Output(type="uri_file")
+            "inference_results": Output(type="uri_folder", 
+            mode="upload")
         },
         environment_variables=env_vars
     )
