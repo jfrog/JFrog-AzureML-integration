@@ -9,18 +9,19 @@ ARG ARTIFACTORY_DOCKER_REPO
 # Base image: defaults to python:3.11-slim, can be overridden with full path
 # Example: docker build --build-arg BASE_IMAGE=your-registry.com/your-repo/python:3.11-slim
 #ARG BASE_IMAGE=python:3.13.11-slim
-ARG BASE_IMAGE=python:3.13.11-alpine
+#ARG BASE_IMAGE=python:3.13.11-alpine
+ARG BASE_IMAGE=python:3.13.11-slim
 FROM ${BASE_IMAGE} AS builder
 
 # Install build dependencies needed for compiling Python packages (e.g., scikit-learn)
 # Note: Alpine uses apk package manager and musl libc (not glibc)
-RUN apk add --no-cache \
-        build-base \
-        gcc \
-        g++ \
-        python3-dev \
-        musl-dev \
-        linux-headers
+# RUN apk add --no-cache \
+#         build-base \
+#         gcc \
+#         g++ \
+#         python3-dev \
+#         musl-dev \
+#         linux-headers
 
 # Set working directory
 WORKDIR /app
@@ -41,25 +42,7 @@ RUN echo "Verifying pydash version (CVE-2023-26145 fix check)..." && \
 
 FROM ${BASE_IMAGE} AS final
 
-# NOTE: Alpine Linux uses musl libc, NOT glibc.
-# If you need glibc 2.42-8, you must use a Debian-based image (e.g., python:3.13-slim)
-# and install glibc from Debian unstable repository (see commented section below).
 
-# Optional: Install glibc 2.42-8 (requires Debian-based image, not Alpine)
-# Uncomment the following section if using a Debian-based image and you need glibc 2.42-8:
-# RUN apt-get update && \
-#     apt-get install -y --no-install-recommends ca-certificates gnupg && \
-#     echo "deb http://deb.debian.org/debian unstable main" > /etc/apt/sources.list.d/unstable.list && \
-#     printf 'Package: *\nPin: release a=unstable\nPin-Priority: 90\n\n' > /etc/apt/preferences.d/unstable && \
-#     printf 'Package: libc6 libc6-dbg libc-dev-bin libc6-dev libc-bin libc-l10n libc-gconv-modules-extra\n' \
-#            'Pin: release a=unstable\nPin-Priority: 900\n' >> /etc/apt/preferences.d/unstable && \
-#     apt-get update && \
-#     apt-get install -y --no-install-recommends \
-#       libc6=2.42-8 \
-#       libc-bin=2.42-8 \
-#       libc-l10n=2.42-8 && \
-#     ldd --version | head -n1 && \
-#     rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /usr/local/lib/python3.13/site-packages /usr/local/lib/python3.13/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
