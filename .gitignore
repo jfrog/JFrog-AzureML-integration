@@ -61,6 +61,6 @@ test-oidc.py
 workspace-tester.py
 pip.conf
 setup_env.sh
-downloaded_artifacts/named-outputs/metadata/metadata.json
+downloaded_artifacts/*
 
 
