@@ -249,7 +249,7 @@ docker build \
   -t ${ARTIFACTORY_HOST}/${ARTIFACTORY_DOCKER_REPO}/azureml-training:${TAG} \
   -f docker/Dockerfile \
   --secret id=pipconfig,src=${PIP_CONFIG_FILE} \
-  --build-arg BASE_IMAGE="${ARTIFACTORY_HOST}/${ARTIFACTORY_DOCKER_REPO}/python:3.13.11-slim" \
+  --build-arg BASE_IMAGE="${ARTIFACTORY_HOST}/${ARTIFACTORY_DOCKER_REPO}/python:3.13.11-alpine" \
   --push \
   .
 ```
