@@ -18,7 +18,15 @@ from azure.ai.ml.entities import WorkspaceConnection
 from azure.ai.ml.entities import UsernamePasswordConfiguration
 from azure.identity import DefaultAzureCredential
 from azure.keyvault.secrets import SecretClient
+import warnings
+import logging
 
+# Suppress AzureML SDK experimental class warnings
+warnings.filterwarnings('ignore', message='.*experimental class.*')
+warnings.filterwarnings('ignore', message='.*experimental.*')
+
+# Suppress specific AzureML SDK warnings
+logging.getLogger('azure.ai.ml').setLevel(logging.ERROR)
 
 def load_config(config_path: str = "config/config.yaml") -> dict:
     """Load configuration from YAML file."""
@@ -242,7 +250,7 @@ def main():
             # Download and display inference results
             try:
                 # Create a temporary directory to download the inference results
-                temp_dir = "./downloaded_artifacts"
+                temp_dir = "./downloaded_artifacts/named-outputs/inference_results"
                 os.makedirs(temp_dir, exist_ok=True)
                 
                 try:
