@@ -239,10 +239,10 @@ The following sequence diagram shows the temporal flow of deployment operations:
 sequenceDiagram
     participant Dev as Developer
     participant AML as AzureML
-    participant Compute as Compute Cluster
-    participant ArtML as Artifactory ML repository    
+    participant Compute as Compute Cluster       
     participant KV as Azure Key Vault
     participant deploy_and_inference as Deploy & Inference script
+    participant ArtML as Artifactory ML repository 
     participant Model as Trained Model
 
     Note over Dev,ArtML: Setup Phase
