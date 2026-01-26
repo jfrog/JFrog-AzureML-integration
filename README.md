@@ -86,11 +86,13 @@ graph TB
     end
     subgraph "Artifactory"
         ArtifactoryML[Artifactory<br/>ML Repository]
+        ArtifactoryDocker2[Artifactory<br/>Docker Registry]
     end
     subgraph "Azure Cloud Runtime"
         KV[Azure Key Vault<br/>Credentials Storage]
         AML[AzureML Workspace]
         Compute[AzureML<br/>Compute Cluster with managed identity]
+        deploy_and_inference [Deploy & Infedence Script]
         Model[Deployed Model]
 
     end
@@ -101,10 +103,14 @@ graph TB
     DeployPipelineScript -->|3. Submit Deployment Job| AML
 
     %% Runtime Phase Flow
-    AML -->|1. Create Compute and Run Job| Compute
-    Compute -->|2. Pull model| ArtifactoryML
-    Compute -->|3. Run model| Model
-    Compute -->|4. Inference Tests Calls| Model    
+    AML -->|1. Pull image  | ArtifactoryDocker2
+    AML -->|2. Create Compute and Run Job| Compute
+    Compute -->|3. Run Deploy & Inference Container| deploy_and_inference
+    deploy_and_inference -->|4. Pull model| ArtifactoryHelper    
+    ArtifactoryHelper -->|5. Get credentials| KV
+    ArtifactoryHelper -->|6. Pull Model| ArtifactoryML
+    deploy_and_inference -->|5. Run model| Model
+    deploy_and_inference -->|6. Inference Tests Calls| Model    
 
     %% Styling
     classDef Deploy Pipeline fill:#e1f5ff,stroke:#01579b,stroke-width:2px
