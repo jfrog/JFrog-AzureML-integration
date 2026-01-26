@@ -87,14 +87,13 @@ graph TB
         DeployPipelineScript[Deployment Script]
     end
     subgraph "Artifactory"
-        ArtifactoryDocker2[Artifactory<br/>Docker Registry]
+        ArtifactoryML[Artifactory<br/>ML Repository]
     end
     subgraph "Azure Cloud Runtime"
         KV[Azure Key Vault<br/>Credentials Storage]
         AML[AzureML Workspace]
         Compute[AzureML<br/>Compute Cluster with managed identity]
-        Container[Deployed Container]
-        Model[Model]      
+        Model[Deployed Model]
 
     end
 
@@ -105,10 +104,9 @@ graph TB
     %% Runtime Phase Flow
     AML -->|1. Create Compute and Run Job| Compute
     Compute -->|2. Get JFrog Credentials| KV
-    Compute -->|3. Pull image| ArtifactoryDocker2
-    Compute -->|4. Run container| Container
-    Container -->|5. Run model| Model
-    Container -->|6. Inference Tests Calls| Model    
+    Compute -->|3. Pull model| ArtifactoryML
+    Compute -->|4. Run model| Model
+    Compute -->|5. Inference Tests Calls| Model    
 
     %% Styling
     classDef Deploy Pipeline fill:#e1f5ff,stroke:#01579b,stroke-width:2px
@@ -197,7 +195,7 @@ graph TB
 - **JFrog Credentials:** Token exchange is based on OIDC
 
 ### Sequence Diagram
-
+#### Training
 The following sequence diagram shows the temporal flow of operations:
 
 ```mermaid
@@ -233,6 +231,30 @@ sequenceDiagram
     ArtML-->>Container: Confirm upload
     Container->>AML: Return pipeline outputs
     AML-->>Dev: Pipeline completed
+```
+#### Deployment and Infenrece
+The following sequence diagram shows the temporal flow of deployment operations:
+
+```mermaid
+sequenceDiagram
+    participant Dev as Developer
+    participant AML as AzureML
+    participant Compute as Compute Cluster
+    participant ArtML as Artifactory ML repository    
+    participant KV as Azure Key Vault
+    participant  deploy_and_inference as Deploy & Inference script
+    participant Model as Trained Model
+
+    Note over Dev,ArtDocker: Setup Phase
+    Dev->>AML: Submit Deploy & Inference
+    AML->>Compute: Provision/Reuse compute cluster
+    Compute->>KV: Get credentials (Managed Identity)
+    KV-->>Compute: Return Artifactory credentials
+    Compute->>deploy_and_inference: Pull Model image
+    deploy_and_inference->>ArtML: Pull Model image
+    deploy_and_inference->>Model: Run model   
+    deploy_and_inference->>Model: test model (inference)   
+    AML-->>Dev: Job completed
 ```
 
 ### Architectual decisions explained
