@@ -8,7 +8,7 @@ What’s inside:
 - AzureML training pipeline example that runs a sample training script producing a trained Iris model in a managed compute cluster (serverless)
 - `frogml` JFrog SDK is used for working with Machine Learning models and datasets packages
 
-## Architecture
+## Train Architecture
 
 The following diagram illustrates the complete architecture and data flow of the system:
 
@@ -41,6 +41,8 @@ graph TB
         ArtifactoryML[Artifactory<br/>ML Repository]
     end
 
+   
+
     %% Build Phase Flow
     Dev -->|1. Build with mounted secrets from pip.conf| Docker
     BaseImage -->|2. Pull base image| Docker
@@ -51,8 +53,7 @@ graph TB
     TrainDev -->|1. Execure Train Pipeline| PipelineScript
     PipelineScript -->|2. Submit Training Job| AML
 
-
-
+    
     %% Runtime Phase Flow
     AML -->|1. Create Compute and Run Job| Compute
     Compute -->|2. Get JFrog Credentials| KV
@@ -63,7 +64,8 @@ graph TB
     TrainScript -->|7. Upload model| ArtifactoryHelper
     ArtifactoryHelper -->|8. Get credentials| KV
     ArtifactoryHelper -->|9. Upload model using FrogML| ArtifactoryML    
-    
+
+        
 
     %% Styling
     classDef buildPhase fill:#e1f5ff,stroke:#01579b,stroke-width:2px
@@ -77,6 +79,49 @@ graph TB
     class Container,TrainScript,ArtifactoryHelper,Model runtime
 ```
 
+## Deploy Architecture
+
+The following diagram illustrates the complete architecture and data flow of the deployment example:
+
+```mermaid
+graph TB
+    subgraph "Deploy Pipeline"
+        DeploymentDev[Developer/Local Machine]
+        DeployPipelineScript[Deployment Script]
+    end
+    subgraph "Artifactory"
+        ArtifactoryDocker2[Artifactory<br/>Docker Registry]
+    end
+    subgraph "Azure Cloud Runtime"
+        KV[Azure Key Vault<br/>Credentials Storage]
+        AML[AzureML Workspace]
+        Compute[AzureML<br/>Compute Cluster with managed identity]
+        Container[Deployed Container]        
+    end
+
+    %% Deployment Phase Flow
+    DeploymentDev -->|1. Execute Deployment Pipeline| DeployPipelineScript
+    DeployPipelineScript -->|2. Submit Deployment Job| AML
+    DeployPipelineScript -->|5. Inference Tests Calls| Container
+
+    %% Runtime Phase Flow
+    AML -->|1. Create Compute and Run Job| Compute
+    Compute -->|2. Get JFrog Credentials| KV
+    Compute -->|3. Pull image| ArtifactoryDocker2
+    Compute -->|4. Run container| Container
+    
+
+     %% Styling
+    classDef Deploy Pipeline fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef azure fill:#0078d4,stroke:#005a9e,stroke-width:2px,color:#fff
+    classDef artifactory fill:#40a9ff,stroke:#096dd9,stroke-width:2px
+    classDef runtime fill:#f0f9ff,stroke:#0284c7,stroke-width:2px
+
+    class DeploymentDev,DeployPipelineScript,Deploy Pipeline
+    class KV,AML,Compute,MI azure
+    class Container,TrainScript,ArtifactoryHelper,Model runtime
+
+```
 ### Architecture Components
 
 #### Build Phase
