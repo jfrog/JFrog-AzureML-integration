@@ -259,7 +259,7 @@ sequenceDiagram
     AML->>Compute: Provision/Reuse compute cluster
     Compute->>KV: Get credentials (Managed Identity)
     Compute->> ArtDocker: Pull Image    
-    Compute->> Run Image    
+    Compute->> Compute: Run Image     
     
     Note over deploy_and_inference,Model: Run Phase
     Compute->>deploy_and_inference: Run Script
