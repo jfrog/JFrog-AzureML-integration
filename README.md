@@ -92,7 +92,7 @@ graph TB
         KV[Azure Key Vault<br/>Credentials Storage]
         AML[AzureML Workspace]
         Compute[AzureML<br/>Compute Cluster with managed identity]
-        deploy_and_inference[Deploy & Infedence Script]
+        deploy_and_inference[Deploy and Infedence Script]
         Model[Deployed Model]
 
     end
