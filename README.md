@@ -49,20 +49,18 @@ graph TB
 
     %% Train Phase Flow
     TrainDev -->|1. Execure Train Pipeline| PipelineScript
-    PipelineScript -->|2. Submit Training Job| AML
-
-
+    PipelineScript -->|2. Get JFrog Credentials| KV
+    PipelineScript -->|3. Submit Training Job| AML
 
     %% Runtime Phase Flow
-    AML -->|1. Create Compute and Run Job| Compute
-    Compute -->|2. Get JFrog Credentials| KV
-    Compute -->|3. Pull image| ArtifactoryDocker2
-    Compute -->|4. Run container| Container
-    Container -->|5. Execute Train script| TrainScript
-    TrainScript -->|6. Train model| Model
-    TrainScript -->|7. Upload model| ArtifactoryHelper
-    ArtifactoryHelper -->|8. Get credentials| KV
-    ArtifactoryHelper -->|9. Upload model using FrogML| ArtifactoryML    
+    AML -->|1. Create Compute and Run Job| Compute    
+    Compute -->|2. Pull image| ArtifactoryDocker2
+    Compute -->|3. Run container| Container
+    Container -->|4. Execute Train script| TrainScript
+    TrainScript -->|5. Train model| Model
+    TrainScript -->|6. Upload model| ArtifactoryHelper
+    ArtifactoryHelper -->|7. Get credentials| KV
+    ArtifactoryHelper -->|8. Upload model using FrogML| ArtifactoryML    
     
 
     %% Styling
@@ -99,14 +97,14 @@ graph TB
 
     %% Deployment Phase Flow
     DeploymentDev -->|1. Execute Deployment Pipeline| DeployPipelineScript
-    DeployPipelineScript -->|2. Submit Deployment Job| AML
+    DeployPipelineScript -->|2. Get JFrog Credentials| KV
+    DeployPipelineScript -->|3. Submit Deployment Job| AML
 
     %% Runtime Phase Flow
     AML -->|1. Create Compute and Run Job| Compute
-    Compute -->|2. Get JFrog Credentials| KV
-    Compute -->|3. Pull model| ArtifactoryML
-    Compute -->|4. Run model| Model
-    Compute -->|5. Inference Tests Calls| Model    
+    Compute -->|2. Pull model| ArtifactoryML
+    Compute -->|3. Run model| Model
+    Compute -->|4. Inference Tests Calls| Model    
 
     %% Styling
     classDef Deploy Pipeline fill:#e1f5ff,stroke:#01579b,stroke-width:2px
@@ -217,6 +215,7 @@ sequenceDiagram
     Docker->>ArtDocker: Build, tag and push image
 
     Note over AML,ArtML: Runtime Phase
+    Dev->>KV: Get credentials (based on AZ login)
     Dev->>AML: Submit training pipeline
     AML->>Compute: Provision compute cluster
     Compute->>ArtDocker: Pull Docker image
@@ -246,6 +245,7 @@ sequenceDiagram
     participant Model as Trained Model
 
     Note over Dev,ArtML: Setup Phase
+    Dev->>KV: Get credentials (based on AZ login)
     Dev->>AML: Submit Deploy & Inference
     AML->>Compute: Provision/Reuse compute cluster
     Compute->>KV: Get credentials (Managed Identity)
