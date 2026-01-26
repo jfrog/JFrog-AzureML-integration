@@ -1,18 +1,21 @@
 # Azure ML SDK
+# Note: Upgraded from 1.0.0 to allow pydash>=6.0.0 (CVE-2023-26145 fix)
 azure-ai-ml>=1.0.0
-azure-identity>=1.15.0
-azure-keyvault-secrets>=4.7.0
-
+azure-identity==1.15.0
+azure-keyvault-secrets==4.7.0
+azure-mgmt-authorization==4.0.0
 # Machine Learning
-scikit-learn>=1.3.0
+scikit-learn>=1.8.0
 numpy>=1.24.0
 pandas>=2.0.0
 
 # Artifactory Integration
-frogml>=0.10.10
+frogml==1.2.29
 requests>=2.31.0
 
 # Utilities
 pyyaml>=6.0
 python-dotenv>=1.0.0
+# Security: pydash>=6.0.0 fixes CVE-2023-26145 (command injection vulnerability)
+pydash>=6.1.0
 
