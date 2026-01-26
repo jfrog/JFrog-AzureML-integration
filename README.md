@@ -233,7 +233,6 @@ sequenceDiagram
     Container->>Container: Train ML model
     Container->>KV: Get credentials for upload
     Container->>ArtML: Upload model (via frogml)
-    ArtML-->>Container: Confirm upload
     Container->>AML: Return pipeline outputs
     AML-->>Dev: Pipeline completed
 ```
