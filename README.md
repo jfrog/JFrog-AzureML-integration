@@ -250,7 +250,7 @@ sequenceDiagram
     AML->>Compute: Provision/Reuse compute cluster
     Compute->>KV: Get credentials (Managed Identity)
     KV-->>Compute: Return Artifactory credentials
-    Note over deploy_and_inference,KV: Setup Phase
+    Note over deploy_and_inference,Model: Run Phase
     Compute->>deploy_and_inference: Run Script
     deploy_and_inference->>ArtML: Pull Model
     deploy_and_inference->>Model: Run model   
