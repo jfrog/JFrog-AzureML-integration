@@ -245,15 +245,15 @@ sequenceDiagram
     participant  deploy_and_inference as Deploy & Inference script
     participant Model as Trained Model
 
-    Note over Dev,ArtDocker: Setup Phase
+    Note over Dev,ArtML: Setup Phase
     Dev->>AML: Submit Deploy & Inference
     AML->>Compute: Provision/Reuse compute cluster
     Compute->>KV: Get credentials (Managed Identity)
     KV-->>Compute: Return Artifactory credentials
-    Compute->>deploy_and_inference: Pull Model image
-    deploy_and_inference->>ArtML: Pull Model image
+    Compute->>deploy_and_inference: Run Script
+    deploy_and_inference->>ArtML: Pull Model
     deploy_and_inference->>Model: Run model   
-    deploy_and_inference->>Model: test model (inference)   
+    deploy_and_inference->>Model: Test Model (inference)   
     AML-->>Dev: Job completed
 ```
 
