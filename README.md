@@ -242,7 +242,7 @@ sequenceDiagram
     participant Compute as Compute Cluster
     participant ArtML as Artifactory ML repository    
     participant KV as Azure Key Vault
-    participant  deploy_and_inference as Deploy & Inference script
+    participant deploy_and_inference as Deploy & Inference script
     participant Model as Trained Model
 
     Note over Dev,ArtML: Setup Phase
@@ -250,10 +250,12 @@ sequenceDiagram
     AML->>Compute: Provision/Reuse compute cluster
     Compute->>KV: Get credentials (Managed Identity)
     KV-->>Compute: Return Artifactory credentials
+    Note over deploy_and_inference,KV: Setup Phase
     Compute->>deploy_and_inference: Run Script
     deploy_and_inference->>ArtML: Pull Model
     deploy_and_inference->>Model: Run model   
-    deploy_and_inference->>Model: Test Model (inference)   
+    deploy_and_inference->>Model: Test model (inference)   
+    deploy_and_inference->>AML: Log results   
     AML-->>Dev: Job completed
 ```
 
