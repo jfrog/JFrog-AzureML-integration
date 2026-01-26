@@ -41,8 +41,6 @@ graph TB
         ArtifactoryML[Artifactory<br/>ML Repository]
     end
 
-   
-
     %% Build Phase Flow
     Dev -->|1. Build with mounted secrets from pip.conf| Docker
     BaseImage -->|2. Pull base image| Docker
@@ -53,7 +51,8 @@ graph TB
     TrainDev -->|1. Execure Train Pipeline| PipelineScript
     PipelineScript -->|2. Submit Training Job| AML
 
-    
+
+
     %% Runtime Phase Flow
     AML -->|1. Create Compute and Run Job| Compute
     Compute -->|2. Get JFrog Credentials| KV
@@ -64,8 +63,7 @@ graph TB
     TrainScript -->|7. Upload model| ArtifactoryHelper
     ArtifactoryHelper -->|8. Get credentials| KV
     ArtifactoryHelper -->|9. Upload model using FrogML| ArtifactoryML    
-
-        
+    
 
     %% Styling
     classDef buildPhase fill:#e1f5ff,stroke:#01579b,stroke-width:2px
@@ -78,7 +76,6 @@ graph TB
     class ArtifactoryPyPI,ArtifactoryDocker,ArtifactoryPyPI2,ArtifactoryDocker2,ArtifactoryML artifactory
     class Container,TrainScript,ArtifactoryHelper,Model runtime
 ```
-
 ## Deploy Architecture
 
 The following diagram illustrates the complete architecture and data flow of the deployment example:
@@ -138,7 +135,7 @@ graph TB
    *At this point, the image will potentially be scanned by JFrog Xray and undergo the customer's SDLC pipeline  
    
 
-#### Runtime Phase
+#### Train Runtime Phase
 1. **Train Pipeline:**
    - A Developer or a CI job runs the Pipeline script 
    - The Pipeline script submits a training job to AzureML workspace
@@ -154,6 +151,20 @@ graph TB
    - Model artifacts are generated (model.pkl, metrics.json, metadata.json)
    - `ArtifactoryHelper` class retrieves JFrog short lived credentials from AzureML Workspace Key Vault
    - [optional] Model is uploaded to Artifactory ML Repository using `frogml` package
+
+#### Deployment & Inference Phase
+1. **Deployment Pipeline:**
+   - A Developer or a CI job runs the deploy_and_inference script 
+   - The Pipeline script submits a deployment job to AzureML workspace
+   - The AzureML workspace Creates/Uses an existing compute cluster and runs the training job on it (in this example we reuse the existing compute cluster)
+   - AzureML compute cluster:
+        - Retrieves JFrog short lived credentials from AzureML Workspace Key Vault
+        - Pulls the trained model image from Artifactory Docker registry
+   - The trained model container:
+        -  runs the model
+        -  performs inference test calls (``model.predict(...)``)
+
+**Important**: This deployment example is ephemeral, once inference test calls are done, container completes and as min_nodes is set to 0, within few minutes the inference is removed   
 
 #### Authentication & Security
 1. **AzureML Workspace's Azure Key Vault:**
