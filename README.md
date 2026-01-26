@@ -96,22 +96,24 @@ graph TB
         KV[Azure Key Vault<br/>Credentials Storage]
         AML[AzureML Workspace]
         Compute[AzureML<br/>Compute Cluster with managed identity]
-        Container[Deployed Container]        
+        Container[Deployed Container]
+        Model[Model]      
+
     end
 
     %% Deployment Phase Flow
     DeploymentDev -->|1. Execute Deployment Pipeline| DeployPipelineScript
     DeployPipelineScript -->|2. Submit Deployment Job| AML
-    DeployPipelineScript -->|5. Inference Tests Calls| Container
 
     %% Runtime Phase Flow
     AML -->|1. Create Compute and Run Job| Compute
     Compute -->|2. Get JFrog Credentials| KV
     Compute -->|3. Pull image| ArtifactoryDocker2
     Compute -->|4. Run container| Container
-    
+    Container -->|5. Run model| Model
+    Container -->|6. Inference Tests Calls| Model    
 
-     %% Styling
+    %% Styling
     classDef Deploy Pipeline fill:#e1f5ff,stroke:#01579b,stroke-width:2px
     classDef azure fill:#0078d4,stroke:#005a9e,stroke-width:2px,color:#fff
     classDef artifactory fill:#40a9ff,stroke:#096dd9,stroke-width:2px
