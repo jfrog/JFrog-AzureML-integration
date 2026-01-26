@@ -17,6 +17,8 @@ htmlcov/
 dist/
 build/
 
+# Config
+config/config.yaml
 # Environment variables
 .env
 .env.local
@@ -59,3 +61,6 @@ test-oidc.py
 workspace-tester.py
 pip.conf
 setup_env.sh
+downloaded_artifacts/*
+
+

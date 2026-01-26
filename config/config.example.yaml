@@ -1,0 +1,36 @@
+# AzureML and Artifactory Configuration
+
+azure:
+  subscription_id: "PLACEHOLDER"
+  resource_group: "PLACEHOLDER"
+  workspace_name: "PLACEHOLDER"
+  location: "PLACEHOLDER"
+
+key_vault:
+  name: "PLACEHOLDER" # Name of the AzureML workspace Key Vault
+  secrets:
+    artifactory_username: "PLACEHOLDER"
+    artifactory_access_token: "PLACEHOLDER"  
+
+artifactory:
+  artifactory_host: "PLACEHOLDER"
+  repositories:
+    docker: "PLACEHOLDER"  # Docker registry repository name
+    ml: "PLACEHOLDER"  # Machine Learning Repository name, used for uploading the resulting trained models to artifactory
+  image_name: "azureml-training" # name of the training image, used for building the training container
+  image_tag: "PLACEHOLDER" # tag of the training image, used for building the training container
+
+azureml:
+  compute:
+    cluster_name: "PLACEHOLDER"
+    vm_size: "PLACEHOLDER" # for example Standard_DS3_v2
+    min_nodes: 0
+    max_nodes: 1
+    managed_identity: "PLACEHOLDER" # use the resource id from the json view of the managed identity you created on the enviornment setup step 
+    managed_identity_client_id: "PLACEHOLDER" # use the client id from the managed identity you created on the enviornment setup step
+    
+model:
+  name: "PLACEHOLDER" # add a name for the resulting trained model
+  version_format: "v{timestamp}"  # add a version format for the resulting trained model, with this example, versions will be generated with timestamp
+  upload_to_artifactory: true # set to true to upload the resulting trained model to artifactory
+
