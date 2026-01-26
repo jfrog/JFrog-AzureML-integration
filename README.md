@@ -89,6 +89,7 @@ graph TB
         ArtifactoryDocker2[Artifactory<br/>Docker Registry]
     end
     subgraph "Azure Cloud Runtime"
+        ArtifactoryHelper[ArtifactoryHelper<br/>frogml Integration]
         KV[Azure Key Vault<br/>Credentials Storage]
         AML[AzureML Workspace]
         Compute[AzureML<br/>Compute Cluster with managed identity]
