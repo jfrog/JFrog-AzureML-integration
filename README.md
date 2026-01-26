@@ -229,11 +229,9 @@ sequenceDiagram
     Compute->>ArtDocker: Pull Docker image
     Compute->>Container: Create container from image
     Container->>KV: Get credentials (Managed Identity)
-    KV-->>Container: Return Artifactory credentials
     Container->>Container: Execute train.py
     Container->>Container: Train ML model
     Container->>KV: Get credentials for upload
-    KV-->>Container: Return Artifactory credentials
     Container->>ArtML: Upload model (via frogml)
     ArtML-->>Container: Confirm upload
     Container->>AML: Return pipeline outputs
@@ -263,6 +261,7 @@ sequenceDiagram
     
     Note over deploy_and_inference,Model: Run Phase
     Compute->>deploy_and_inference: Run Script
+    deploy_and_inference->>KV: Get credentials (Managed Identity)
     deploy_and_inference->>ArtML: Pull Model
     deploy_and_inference->>Model: Run model   
     deploy_and_inference->>Model: Test model (inference)   
