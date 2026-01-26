@@ -110,8 +110,8 @@ graph TB
     deploy_and_inference -->|4. Pull model| ArtifactoryHelper    
     ArtifactoryHelper -->|5. Get credentials| KV
     ArtifactoryHelper -->|6. Pull Model| ArtifactoryML
-    deploy_and_inference -->|5. Run model| Model
-    deploy_and_inference -->|6. Inference Tests Calls| Model    
+    deploy_and_inference -->|7. Run model| Model
+    deploy_and_inference -->|8. Inference Tests Calls| Model    
 
     %% Styling
     classDef Deploy Pipeline fill:#e1f5ff,stroke:#01579b,stroke-width:2px
@@ -157,15 +157,16 @@ graph TB
 
 #### Deployment & Inference Phase
 1. **Deployment Pipeline:**
-   - A Developer or a CI job runs the deploy_and_inference script 
+   - A Developer or a CI job runs the deployment_pipeline script, which is responsible for retrieving JFrog short lived credentials from AzureML Workspace Key Vault
    - The Pipeline script submits a deployment job to AzureML workspace
    - The AzureML workspace Creates/Uses an existing compute cluster and runs the training job on it (in this example we reuse the existing compute cluster)
-   - AzureML compute cluster:
-        - Retrieves JFrog short lived credentials from AzureML Workspace Key Vault
-        - Pulls the trained model image from Artifactory Docker registry
+   - AzureML compute cluster:        
+        - Pulls the trained model image from Artifactory Docker registry (using the previously retrieved credentials)
    - The trained model container:
-        -  runs the model
-        -  performs inference test calls (``model.predict(...)``)
+        -  Retrieves JFrog short lived credentials from AzureML Workspace Key Vault
+        -  Downlaods the model
+        -  Runs the model
+        -  Performs inference test calls (``model.predict(...)``)
 
 **Important**: This deployment example is ephemeral, once inference test calls are done, container completes and as min_nodes is set to 0, within few minutes the inference is removed   
 
@@ -248,15 +249,18 @@ sequenceDiagram
     participant Compute as Compute Cluster       
     participant KV as Azure Key Vault
     participant deploy_and_inference as Deploy & Inference script
+    participant ArtDocker as Artifactory Docker
     participant ArtML as Artifactory ML repository 
     participant Model as Trained Model
 
     Note over Dev,ArtML: Setup Phase
     Dev->>KV: Get credentials (based on AZ login)
-    Dev->>AML: Submit Deploy & Inference
+    Dev->>AML: Submit Deploy & Inference    
     AML->>Compute: Provision/Reuse compute cluster
     Compute->>KV: Get credentials (Managed Identity)
-    KV-->>Compute: Return Artifactory credentials
+    Compute->> ArtDocker: Pull Image    
+    Compute->> Run Image    
+    
     Note over deploy_and_inference,Model: Run Phase
     Compute->>deploy_and_inference: Run Script
     deploy_and_inference->>ArtML: Pull Model
