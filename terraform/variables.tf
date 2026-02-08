@@ -95,10 +95,7 @@ variable "function_app_name" {
   type        = string
 }
 
-variable "storage_account_name" {
-  description = "Name of the storage account for the Function App"
-  type        = string
-}
+
 
 variable "function_python_version" {
   description = "Python version for the Function App runtime"
@@ -107,14 +104,84 @@ variable "function_python_version" {
 }
 
 variable "function_app_sku" {
-  description = "SKU for the Function App service plan (FC1 for Flex Consumption, Y1 for Consumption)"
+  description = "SKU for the Function App service plan (FC1 for Flex Consumption with VNet support, Y1 for Consumption)"
   type        = string
-  default     = "Y1"
+  default     = "FC1"
 }
 
 variable "azure_web_jobs_storage" {
   description = "Storage related variable for function app"
   type        = string
+}
+
+variable "function_app_storage_account_name" {
+  description = "Name of the storage account for the Function App (3-24 chars, lowercase alphanumeric, globally unique). When null, a random name (prefix 'func' + 8 random chars) is used."
+  type        = string
+  default     = null
+}
+
+# ──────────────────────────────────────────────
+# VNet and subnets (storage private endpoint + Function App integration)
+# ──────────────────────────────────────────────
+
+variable "existing_vnet_name" {
+  description = "When set, use this existing VNet (data source) instead of creating one. When null, create a new VNet."
+  type        = string
+  default     = null
+}
+
+variable "existing_vnet_resource_group_name" {
+  description = "Resource group of the existing VNet. When null, use var.resource_group_name."
+  type        = string
+  default     = null
+}
+
+variable "function_app_vnet_name" {
+  description = "Name of the VNet to create (used only when existing_vnet_name is null)."
+  type        = string
+  default     = null
+}
+
+variable "function_app_vnet_address_space" {
+  description = "Address space for the VNet to create (e.g. [\"10.0.0.0/16\"]). Used only when existing_vnet_name is null."
+  type        = list(string)
+  default     = null
+}
+
+variable "existing_storage_private_endpoint_subnet_name" {
+  description = "Name of the existing subnet for the storage private endpoint. When set with existing_function_app_integration_subnet_name, Terraform looks up both subnets and does not create any."
+  type        = string
+  default     = null
+}
+
+variable "existing_function_app_integration_subnet_name" {
+  description = "Name of the existing subnet for Function App VNet integration. For Flex Consumption (FC1) it must be delegated to Microsoft.App/environments (Terraform cannot set this on a data-source subnet; add via Azure Portal or CLI before apply)."
+  type        = string
+  default     = null
+}
+
+variable "storage_private_endpoint_subnet_name" {
+  description = "Name of the subnet for the storage private endpoint (used when creating the subnet)."
+  type        = string
+  default     = "snet-storage-private-endpoint"
+}
+
+variable "storage_private_endpoint_subnet_prefix" {
+  description = "Address prefix for the storage private endpoint subnet (e.g. 10.0.1.0/24)."
+  type        = string
+  default     = "10.0.1.0/24"
+}
+
+variable "function_app_integration_subnet_name" {
+  description = "Name of the subnet for Function App VNet integration (used when creating the subnet)."
+  type        = string
+  default     = "snet-function-app"
+}
+
+variable "function_app_integration_subnet_prefix" {
+  description = "Address prefix for the Function App integration subnet (e.g. 10.0.2.0/24)."
+  type        = string
+  default     = "10.0.2.0/24"
 }
 
 # ──────────────────────────────────────────────

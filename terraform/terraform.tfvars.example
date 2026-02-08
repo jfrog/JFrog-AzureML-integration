@@ -17,9 +17,25 @@ azure_ad_token_audience              = "api://PLACEHOLDER"
 artifactory_token_secret_name        = "artifactory-access-token-secret"
 
 # Function App
-function_app_name                    = "artifactory-token-rotation"
-storage_account_name                 = "artifactory-token-rotation-code"
-azure_web_jobs_storage               = "UseDevelopmentStorage=true"
+function_app_name                 = "artifactory-token-rotation"
+# FC1 = Flex Consumption (supports VNet integration); Y1 = Consumption (no VNet). Use FC1 for VNet integration.
+# function_app_sku = "FC1"
+# Omit or set to null to use a random storage account name (func + 8 random chars); otherwise set a fixed name (3-24 chars, lowercase alphanumeric)
+# function_app_storage_account_name = null
+function_app_storage_account_name = "myfuncstorage123"
+azure_web_jobs_storage            = "UseDevelopmentStorage=true"
+
+# VNet and subnets (new VNet: set function_app_vnet_* and subnet names/prefixes; existing VNet: set existing_vnet_name and optionally existing_*_subnet_name)
+function_app_vnet_name                  = "vnet-function-app"
+function_app_vnet_address_space          = ["10.0.0.0/16"]
+storage_private_endpoint_subnet_name     = "snet-storage-private-endpoint"
+storage_private_endpoint_subnet_prefix   = "10.0.1.0/24"
+function_app_integration_subnet_name     = "snet-function-app"
+function_app_integration_subnet_prefix   = "10.0.2.0/24"
+# existing_vnet_name                          = null
+# existing_vnet_resource_group_name            = null
+# existing_storage_private_endpoint_subnet_name = null
+# existing_function_app_integration_subnet_name = null
 
 # Optional: user-assigned managed identity
 # user_assigned_identity_name        = "my-function-identity"

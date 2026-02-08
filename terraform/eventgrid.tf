@@ -3,11 +3,11 @@
 # ──────────────────────────────────────────────
 
 resource "azurerm_eventgrid_system_topic" "keyvault_events" {
-  name                   = "${var.key_vault_name}-events"
-  resource_group_name    = data.azurerm_resource_group.rg.name
-  location               = var.location
-  source_resource_id = data.azurerm_key_vault.kv.id
-  topic_type             = "Microsoft.KeyVault.vaults"
+  name                = "${var.key_vault_name}-events"
+  resource_group_name = data.azurerm_resource_group.rg.name
+  location            = var.location
+  source_resource_id  = data.azurerm_key_vault.kv.id
+  topic_type          = "Microsoft.KeyVault.vaults"
 
   tags = var.tags
 }
@@ -34,7 +34,7 @@ resource "azurerm_eventgrid_system_topic_event_subscription" "secret_near_expiry
 
   # Route events to the Azure Function
   azure_function_endpoint {
-    function_id                       = "${azurerm_linux_function_app.function_app.id}/functions/KeyVaultSecretRotation"
+    function_id                       = "${azurerm_function_app_flex_consumption.function_app.id}/functions/KeyVaultSecretRotation"
     max_events_per_batch              = 1
     preferred_batch_size_in_kilobytes = 64
   }
