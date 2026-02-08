@@ -1,7 +1,7 @@
 # Azure ML SDK
 # Note: Upgraded from 1.0.0 to allow pydash>=6.0.0 (CVE-2023-26145 fix)
 azure-ai-ml>=1.0.0
-azure-identity==1.15.0
+azure-identity==1.16.1
 azure-keyvault-secrets==4.7.0
 azure-mgmt-authorization==4.0.0
 # Machine Learning
