@@ -56,11 +56,13 @@ Thumbs.db
 
 # Logs
 *.log
+
 # Test Scripts
 test-oidc.py
 workspace-tester.py
 pip.conf
 setup_env.sh
 downloaded_artifacts/*
-
-
+# Terraform
+terraform/.terraform/*
+terraform/.terraform.lock.hcl
