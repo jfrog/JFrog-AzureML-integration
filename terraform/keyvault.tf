@@ -1,8 +1,45 @@
+# Try to fetch existing Key Vault
+data "azurerm_key_vault" "existing" {
+  name                = "my-keyvault-name"
+  resource_group_name = "my-resource-group"
+  
+  # This will fail if not found, so we handle it
+  count = can(data.azurerm_key_vault.existing) ? 1 : 0
+}
+# Get current Azure client configuration
+# data "azurerm_client_config" "current" {}
+
+# Try to fetch existing Storage Account
+data "azurerm_storage_account" "existing" {
+  name                = "mystorageaccount123"
+  resource_group_name = "my-resource-group"
+  
+  # Handle gracefully if not found
+  count = try(data.azurerm_storage_account.existing.id, null) != null ? 1 : 0
+}
+
+# Create Storage Account only if it doesn't exist
+resource "azurerm_storage_account" "storage" {
+  count = length(data.azurerm_storage_account.existing) == 0 ? 1 : 0
+  
+  name                     = "mystorageaccount123"
+  resource_group_name      = "my-resource-group"
+  location                 = "eastus"
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+  
+  tags = {
+    environment = "dev"
+    managed_by  = "terraform"
+  }
+}
+
 # ──────────────────────────────────────────────
 # Azure Key Vault
 # ──────────────────────────────────────────────
 
 resource "azurerm_key_vault" "kv" {
+  count                      = length(data.azurerm_key_vault.existing) == 0 ? 1 : 0
   name                       = var.key_vault_name
   location                   = var.location
   resource_group_name        = data.azurerm_resource_group.rg.name
