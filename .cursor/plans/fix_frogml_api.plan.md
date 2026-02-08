@@ -1,15 +1,19 @@
 # Fix frogml API Usage for Model Download
 
 ## Overview
+
 The `artifactory_helper.py` is using incorrect `frogml` API methods that don't exist in version 1.2.29. The correct method is `frogml.files.load_model()` instead of `download_model()` or `get_model_version()`.
 
 ## Problem
+
 - `frogml.files.download_model()` doesn't exist
 - `frogml.files.get_model_version()` doesn't exist
 - Error: `AttributeError: module 'frogml.sdk.model_version.files' has no attribute 'get_model_version'`
 
 ## Solution
+
 Replace with the correct `frogml` API methods:
+
 - Use `frogml.files.load_model()` for downloading models
 - Use `frogml.files.get_model_info()` for getting model metadata (if needed)
 
@@ -20,6 +24,7 @@ Replace with the correct `frogml` API methods:
 **Location:** Lines 277-297
 
 **Current (incorrect):**
+
 ```python
 try:
     # Try using frogml.files.download_model() first
@@ -45,6 +50,7 @@ try:
 ```
 
 **Change to:**
+
 ```python
 try:
     # Use frogml.files.load_model() - the correct API method
@@ -67,6 +73,7 @@ try:
 **Location:** Lines 228-235
 
 **Current (incorrect):**
+
 ```python
 # Use frogml.files.get_model_version() to check if model exists
 model_version = frogml.files.get_model_version(
@@ -79,6 +86,7 @@ return model_version is not None
 ```
 
 **Change to:**
+
 ```python
 # Use frogml.files.get_model_info() to check if model exists
 model_info = frogml.files.get_model_info(
@@ -95,11 +103,13 @@ return model_info is not None
 **Location:** Line 254
 
 **Current:**
+
 ```python
 Uses frogml.files.download_model() or frogml.files.get_model_version().download().
 ```
 
 **Change to:**
+
 ```python
 Uses frogml.files.load_model().
 ```
