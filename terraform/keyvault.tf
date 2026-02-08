@@ -7,7 +7,6 @@ data "azurerm_key_vault" "existing" {
   count = can(data.azurerm_key_vault.existing) ? 1 : 0
 }
 # Get current Azure client configuration
-# data "azurerm_client_config" "current" {}
 
 # Try to fetch existing Storage Account
 data "azurerm_storage_account" "existing" {
