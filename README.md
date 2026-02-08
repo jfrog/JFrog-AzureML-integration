@@ -1,4 +1,4 @@
-# AzureML + JFrog Artifactory Integration (Work In Progress)
+# AzureML + JFrog Artifactory Integration (WIP)
 
 This project demonstrates how to build and run Azure Machine Learning (AzureML) jobs while sourcing packages, images, and model artifacts from/to JFrog Artifactory.
 It focuses on secure credential handling, repeatable builds, and predictable promotion of trained models.
