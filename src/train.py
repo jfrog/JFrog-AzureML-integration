@@ -6,7 +6,8 @@ Trains a scikit-learn model on the Iris dataset and saves the model.
 import os
 import pickle
 import json
-from datetime import datetime
+import argparse
+from datetime import datetime, timezone
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
@@ -19,10 +20,17 @@ def train_model(output_dir: str = "./outputs") -> dict:
     
     Args:
         output_dir: Directory to save the model and metrics
+        metadata_out_path: Optional path to write metadata.json (for AzureML output)
         
     Returns:
         Dictionary with model information and metrics
     """
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--metadata_dir", type=str, help="Path provided by Azure ML")
+    args = parser.parse_args()
+    # Create the specific filename inside the directory provided by Azure
+    output_file_path = os.path.join(args.metadata_dir, "metadata.json")
+
     # Create output directory
     os.makedirs(output_dir, exist_ok=True)
     
@@ -67,7 +75,7 @@ def train_model(output_dir: str = "./outputs") -> dict:
         'n_estimators': 100,
         'training_samples': int(X_train.shape[0]),
         'test_samples': int(X_test.shape[0]),
-        'timestamp': datetime.utcnow().isoformat()
+        'timestamp': datetime.now(timezone.utc).isoformat()
     }
     
     metrics_path = os.path.join(output_dir, "metrics.json")
@@ -78,11 +86,11 @@ def train_model(output_dir: str = "./outputs") -> dict:
     # Create metadata for Artifactory
     metadata = {
         'model_name': 'iris-classifier',
-        'version': datetime.utcnow().strftime('v%Y%m%d%H%M%S'),
+        'version': datetime.now(timezone.utc).strftime('v%Y%m%d%H%M%S'),
         'model_type': 'RandomForestClassifier',
         'dataset': 'Iris',
         'accuracy': float(accuracy),
-        'training_date': datetime.utcnow().strftime('%Y%m%d%H%M%S'),
+        'training_date': datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S'),
         'features': iris.feature_names,
         'target_classes': iris.target_names.tolist()
     }
@@ -90,6 +98,9 @@ def train_model(output_dir: str = "./outputs") -> dict:
     metadata_path = os.path.join(output_dir, "metadata.json")
     with open(metadata_path, 'w') as f:
         json.dump(metadata, f, indent=2)
+
+    with open(output_file_path, 'w') as f:
+        json.dump(metadata, f)
     print(f"Metadata saved to {metadata_path}")
     
     return {
@@ -116,20 +127,18 @@ if __name__ == "__main__":
     # Upload to Artifactory if environment variables are set
     if all([
         os.environ.get('AZURE_KEY_VAULT_NAME'),
-        os.environ.get('ARTIFACTORY_BASE_URL'),
+        os.environ.get('ARTIFACTORY_HOST'),
         os.environ.get('ARTIFACTORY_ML_REPO')
-    ]):
+    ]) and os.environ.get('UPLOAD_TO_ARTIFACTORY') == 'true':
         try:
             sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
             from utils.artifactory_helper import ArtifactoryHelper
             
             print("\nUploading model to Artifactory ML Repository...")
             helper = ArtifactoryHelper(
-                artifactory_base_url=os.environ['ARTIFACTORY_BASE_URL'],
+                artifactory_host=os.environ['ARTIFACTORY_HOST'],
                 key_vault_name=os.environ['AZURE_KEY_VAULT_NAME'],
                 username_secret_name=os.environ.get('ARTIFACTORY_USERNAME_SECRET', 'artifactory-username'),
-                password_secret_name=os.environ.get('ARTIFACTORY_PASSWORD_SECRET', 'artifactory-password'),
-                api_key_secret_name=os.environ.get('ARTIFACTORY_API_KEY_SECRET'),
                 access_token_secret_name=os.environ.get('ARTIFACTORY_ACCESS_TOKEN_SECRET')
             )
             
