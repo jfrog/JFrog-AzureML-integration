@@ -14,7 +14,7 @@ data "azurerm_resource_group" "rg" {
 # ──────────────────────────────────────────────
 
 resource "azurerm_user_assigned_identity" "function_identity" {
-  count = var.existing_user_assigned_identity_id == null && var.user_assigned_identity_name != null ? 1 : 0
+  # count = var.existing_user_assigned_identity_id == null && var.user_assigned_identity_name != null ? 1 : 0
 
   name                = var.user_assigned_identity_name
   resource_group_name = data.azurerm_resource_group.rg.name
@@ -23,22 +23,9 @@ resource "azurerm_user_assigned_identity" "function_identity" {
 }
 
 locals {
-  # Resolve the managed identity resource ID
-  identity_id = var.existing_user_assigned_identity_id != null ? var.existing_user_assigned_identity_id : (
-    length(azurerm_user_assigned_identity.function_identity) > 0
-    ? azurerm_user_assigned_identity.function_identity[0].id
-    : null
-  )
+  identity_id = var.existing_user_assigned_identity_id != null ? var.existing_user_assigned_identity_id : azurerm_user_assigned_identity.function_identity.id
 
-  identity_principal_id = var.existing_user_assigned_identity_id != null ? null : (
-    length(azurerm_user_assigned_identity.function_identity) > 0
-    ? azurerm_user_assigned_identity.function_identity[0].principal_id
-    : null
-  )
+  identity_principal_id = var.existing_user_assigned_identity_id != null ? null : azurerm_user_assigned_identity.function_identity.principal_id
 
-  identity_client_id = var.existing_user_assigned_identity_id != null ? null : (
-    length(azurerm_user_assigned_identity.function_identity) > 0
-    ? azurerm_user_assigned_identity.function_identity[0].client_id
-    : null
-  )
+  identity_client_id = var.existing_user_assigned_identity_id != null ? null : azurerm_user_assigned_identity.function_identity.client_id
 }

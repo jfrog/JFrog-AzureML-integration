@@ -6,7 +6,7 @@ resource "azurerm_eventgrid_system_topic" "keyvault_events" {
   name                   = "${var.key_vault_name}-events"
   resource_group_name    = data.azurerm_resource_group.rg.name
   location               = var.location
-  source_arm_resource_id = azurerm_key_vault.kv.id
+  source_resource_id = data.azurerm_key_vault.kv.id
   topic_type             = "Microsoft.KeyVault.vaults"
 
   tags = var.tags

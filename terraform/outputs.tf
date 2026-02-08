@@ -4,12 +4,12 @@
 
 output "key_vault_id" {
   description = "Resource ID of the Key Vault"
-  value       = azurerm_key_vault.kv.id
+  value       = data.azurerm_key_vault.kv.id
 }
 
 output "key_vault_uri" {
   description = "URI of the Key Vault"
-  value       = azurerm_key_vault.kv.vault_uri
+  value       =  data.azurerm_key_vault.kv.vault_uri
 }
 
 output "function_app_name" {
@@ -32,14 +32,6 @@ output "event_grid_system_topic_id" {
   value       = azurerm_eventgrid_system_topic.keyvault_events.id
 }
 
-output "application_insights_instrumentation_key" {
-  description = "Instrumentation key for Application Insights"
-  value       = azurerm_application_insights.function_insights.instrumentation_key
-  sensitive   = true
-}
 
-output "application_insights_connection_string" {
-  description = "Connection string for Application Insights"
-  value       = azurerm_application_insights.function_insights.connection_string
-  sensitive   = true
-}
+
+

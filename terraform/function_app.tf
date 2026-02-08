@@ -2,15 +2,9 @@
 # Storage Account (required by Azure Functions)
 # ──────────────────────────────────────────────
 
-resource "azurerm_storage_account" "function_storage" {
-  name                     = var.storage_account_name
-  resource_group_name      = data.azurerm_resource_group.rg.name
-  location                 = var.location
-  account_tier             = "Standard"
-  account_replication_type = "LRS"
-  min_tls_version          = "TLS1_2"
-
-  tags = var.tags
+data "azurerm_storage_account" "function_storage" {
+  name                = var.storage_account_name
+  resource_group_name = data.azurerm_resource_group.rg.name
 }
 
 # ──────────────────────────────────────────────
@@ -27,18 +21,6 @@ resource "azurerm_service_plan" "function_plan" {
   tags = var.tags
 }
 
-# ──────────────────────────────────────────────
-# Application Insights (monitoring)
-# ──────────────────────────────────────────────
-
-resource "azurerm_application_insights" "function_insights" {
-  name                = "${var.function_app_name}-insights"
-  resource_group_name = data.azurerm_resource_group.rg.name
-  location            = var.location
-  application_type    = "web"
-
-  tags = var.tags
-}
 
 # ──────────────────────────────────────────────
 # Linux Function App (Python)
@@ -48,8 +30,8 @@ resource "azurerm_linux_function_app" "function_app" {
   name                       = var.function_app_name
   resource_group_name        = data.azurerm_resource_group.rg.name
   location                   = var.location
-  storage_account_name       = azurerm_storage_account.function_storage.name
-  storage_account_access_key = azurerm_storage_account.function_storage.primary_access_key
+  storage_account_name       = data.azurerm_storage_account.function_storage.name
+  storage_account_access_key = data.azurerm_storage_account.function_storage.primary_access_key
   service_plan_id            = azurerm_service_plan.function_plan.id
 
   site_config {
@@ -68,7 +50,7 @@ resource "azurerm_linux_function_app" "function_app" {
   app_settings = {
     # Azure Functions runtime
     FUNCTIONS_WORKER_RUNTIME       = "python"
-    APPINSIGHTS_INSTRUMENTATIONKEY = azurerm_application_insights.function_insights.instrumentation_key
+  
 
     # Token rotation configuration
     KEY_VAULT_NAME                = var.key_vault_name
