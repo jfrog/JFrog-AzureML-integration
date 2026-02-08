@@ -146,14 +146,19 @@ def rotate_token(secret_name: str) -> None:
         provider_name=provider_name,
     )
     jfrog_access_token = token_response["access_token"]
+    jfrog_username = token_response["username"]
     expires_in = token_response.get("expires_in")
     logger.info("✓ JFrog access token obtained (expires_in=%s seconds)", expires_in)
 
     # Step 3: Store new token in Key Vault
+    secret_json = json.dumps({
+        "access_token": jfrog_access_token,
+        "username": jfrog_username,
+    }
     _store_token_in_key_vault(
         vault_name=vault_name,
         secret_name=secret_name,
-        token_value=jfrog_access_token,
+        token_value=secret_json,
         expires_in=expires_in,
     )
 
