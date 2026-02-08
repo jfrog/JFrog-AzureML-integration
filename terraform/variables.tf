@@ -112,6 +112,11 @@ variable "function_app_sku" {
   default     = "Y1"
 }
 
+variable "azure_web_jobs_storage" {
+  description = "Storage related variable for function app"
+  type        = string
+}
+
 # ──────────────────────────────────────────────
 # Identity (optional user-assigned managed identity)
 # ──────────────────────────────────────────────

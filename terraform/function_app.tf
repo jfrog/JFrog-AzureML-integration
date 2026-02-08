@@ -53,6 +53,7 @@ resource "azurerm_linux_function_app" "function_app" {
   
 
     # Token rotation configuration
+    AzureWebJobsStorage           = var.azure_web_jobs_storage
     KEY_VAULT_NAME                = var.key_vault_name
     ARTIFACTORY_URL               = var.artifactory_url
     JFROG_OIDC_PROVIDER_NAME      = var.jfrog_oidc_provider_name

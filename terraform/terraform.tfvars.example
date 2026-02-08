@@ -19,6 +19,7 @@ artifactory_token_secret_name        = "artifactory-access-token-secret"
 # Function App
 function_app_name                    = "artifactory-token-rotation"
 storage_account_name                 = "artifactory-token-rotation-code"
+azure_web_jobs_storage               = "UseDevelopmentStorage=true"
 
 # Optional: user-assigned managed identity
 # user_assigned_identity_name        = "my-function-identity"
