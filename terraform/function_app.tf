@@ -26,13 +26,25 @@ resource "azurerm_storage_account" "function_storage" {
   account_replication_type = "LRS"
   min_tls_version          = "TLS1_2"
 
-  network_rules {
-    default_action             = "Deny"
-    bypass                     = ["AzureServices"]
-    virtual_network_subnet_ids = [local.function_app_integration_subnet_id]
-  }
-
   tags = var.tags
+}
+
+# ──────────────────────────────────────────────
+# Storage network rules (applied AFTER function app creation)
+# The function app must exist and have VNet integration active before
+# the storage firewall is locked down, otherwise the Azure control
+# plane cannot reach storage during provisioning (→ 500).
+# ──────────────────────────────────────────────
+
+resource "azurerm_storage_account_network_rules" "function_storage_rules" {
+  storage_account_id         = azurerm_storage_account.function_storage.id
+  default_action             = "Deny"
+  bypass                     = ["AzureServices"]
+  virtual_network_subnet_ids = [local.function_app_integration_subnet_id]
+
+  depends_on = [
+    azurerm_function_app_flex_consumption.function_app
+  ]
 }
 
 # ──────────────────────────────────────────────
@@ -89,6 +101,8 @@ resource "azurerm_service_plan" "function_plan" {
 
 # ──────────────────────────────────────────────
 # Function App (Flex Consumption, Python)
+# PREREQUISITE: Register the Microsoft.App provider in the subscription:
+#   az provider register -n Microsoft.App --subscription <subscription-id>
 # ──────────────────────────────────────────────
 
 resource "azurerm_function_app_flex_consumption" "function_app" {
@@ -120,6 +134,7 @@ resource "azurerm_function_app_flex_consumption" "function_app" {
     JFROG_OIDC_PROVIDER_NAME      = var.jfrog_oidc_provider_name
     AZURE_AD_TOKEN_AUDIENCE       = var.azure_ad_token_audience
     ARTIFACTORY_TOKEN_SECRET_NAME = var.artifactory_token_secret_name
+    AzureWebJobsStorage           = var.azure_web_jobs_storage 
 
     # User-assigned managed identity client ID (if applicable)
     AZURE_CLIENT_ID = local.identity_client_id != null ? local.identity_client_id : ""
