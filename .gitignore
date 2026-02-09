@@ -68,3 +68,7 @@ downloaded_artifacts/*
 terraform/.terraform/*
 terraform/.terraform.lock.hcl
 terraform/terraform.tfvars
+
+# Azure
+__azurite_db_blob_extent__.json
+__azurite_db_blob__.json

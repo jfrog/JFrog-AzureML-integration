@@ -28,21 +28,23 @@ locals {
   vnet_id                  = var.existing_vnet_name != null ? data.azurerm_virtual_network.existing[0].id : azurerm_virtual_network.vnet[0].id
 }
 
-# Create private-endpoint subnet when not using existing subnets
+# Create private-endpoint subnet when not using an existing PE subnet.
+# This subnet must NOT have any delegations — Azure does not allow
+# private endpoints in a delegated subnet.
 resource "azurerm_subnet" "storage_private_endpoint" {
-  count                = (var.existing_vnet_name == null || var.existing_storage_private_endpoint_subnet_name == null) ? 1 : 0
+  count                = var.existing_storage_private_endpoint_subnet_name == null ? 1 : 0
   name                 = var.storage_private_endpoint_subnet_name
   resource_group_name  = local.vnet_resource_group_name
   virtual_network_name = local.vnet_name
   address_prefixes     = [var.storage_private_endpoint_subnet_prefix]
 }
 
-# Create Function App integration subnet when not using existing subnets.
+# Create Function App integration subnet when not using an existing integration subnet.
 # Flex Consumption (FC1) requires delegation to Microsoft.App/environments.
 # Prerequisite: register the Microsoft.App resource provider in the subscription
 # (e.g. az provider register -n Microsoft.App); Terraform does not register it.
 resource "azurerm_subnet" "function_app" {
-  count                = (var.existing_vnet_name == null || var.existing_function_app_integration_subnet_name == null) ? 1 : 0
+  count                = var.existing_function_app_integration_subnet_name == null ? 1 : 0
   name                 = var.function_app_integration_subnet_name
   resource_group_name  = local.vnet_resource_group_name
   virtual_network_name = local.vnet_name
