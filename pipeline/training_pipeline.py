@@ -95,7 +95,6 @@ def training_pipeline():
         "AZURE_KEY_VAULT_NAME": config['key_vault']['name'],
         "ARTIFACTORY_HOST": config['artifactory']['artifactory_host'],
         "ARTIFACTORY_ML_REPO": config['artifactory']['repositories']['ml'],
-        "ARTIFACTORY_USERNAME_SECRET": config['key_vault']['secrets']['artifactory_username'],
         "MODEL_NAME": config['model']['name'],
         "AZURE_CLIENT_ID": config['azureml']['compute']['managed_identity_client_id'],
         "UPLOAD_TO_ARTIFACTORY": config['model']['upload_to_artifactory']
@@ -103,8 +102,8 @@ def training_pipeline():
 
     
     # Add optional access token secret if available (preferred for frogml)
-    if 'artifactory_access_token' in config['key_vault']['secrets']:
-        env_vars["ARTIFACTORY_ACCESS_TOKEN_SECRET"] = config['key_vault']['secrets']['artifactory_access_token']
+    if 'artifactory_access_token_secret_name' in config['key_vault']['secrets']:
+        env_vars["ARTIFACTORY_ACCESS_TOKEN_SECRET_NAME"] = config['key_vault']['secrets']['artifactory_access_token_secret_name']
     
     # Create training command component
         train_cmd = command(
@@ -178,15 +177,18 @@ def main():
         vault_url = f"https://{config['key_vault']['name']}.vault.azure.net"
         kv_client = SecretClient(vault_url=vault_url, credential=credential)
         
-        # Prefer access token, fallback to API key
-        access_token = None
-        if 'artifactory_access_token' in config['key_vault']['secrets']:
-            try:
-                access_token = kv_client.get_secret(config['key_vault']['secrets']['artifactory_access_token']).value
-            except Exception as e:
-                print(f"Warning: Could not retrieve access token: {e}")
-        
         username = None
+        access_token = None
+        if 'artifactory_access_token_secret_name' in config['key_vault']['secrets']:
+            try:
+                 secret_value = kv_client.get_secret(config['key_vault']['secrets']['artifactory_access_token_secret_name']).value
+                 secret_value_json = json.loads(secret_value)
+                 access_token = secret_value_json['access_token']
+                 username = secret_value_json['username']
+            except Exception as e:
+                print(f"Warning: Could not retrieve access and username token: {e}")
+        
+        
 
         
         # Prefer access token for API key auth, fallback to username/password

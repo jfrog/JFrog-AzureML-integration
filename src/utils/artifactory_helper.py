@@ -14,6 +14,7 @@ import requests
 from typing import Optional, Dict, Any
 from azure.identity import DefaultAzureCredential, ManagedIdentityCredential
 from azure.keyvault.secrets import SecretClient
+import json
 
 try:
     import frogml
@@ -30,7 +31,6 @@ class ArtifactoryHelper:
         self,
         artifactory_host: str,
         key_vault_name: str,
-        username_secret_name: str,
         access_token_secret_name: Optional[str] = None
     ):
         """
@@ -39,15 +39,11 @@ class ArtifactoryHelper:
         Args:
             artifactory_host: Base URL of Artifactory instance
             key_vault_name: Name of Azure Key Vault
-            username_secret_name: Name of secret containing Artifactory username
-            password_secret_name: Name of secret containing Artifactory password
-            api_key_secret_name: Optional name of secret containing Artifactory API key
-            access_token_secret_name: Optional name of secret containing Artifactory access token
+            access_token_secret_name: name of secret containing Artifactory access token and username
                                    (preferred for frogml authentication)
         """
         self.artifactory_host = artifactory_host.rstrip('/')
         self.key_vault_name = key_vault_name
-        self.username_secret_name = username_secret_name
         self.access_token_secret_name = access_token_secret_name
         
         self._credentials = None
@@ -76,23 +72,28 @@ class ArtifactoryHelper:
         """Retrieve Artifactory credentials from Azure Key Vault."""
         if self._credentials is None:
             client = self._get_key_vault_client()
+        
+            username = None
+            access_token = None
+            try:
+              secret_value = client.get_secret(self.access_token_secret_name).value
+              secret_value_json = json.loads(secret_value)
+              access_token = secret_value_json['access_token']
+              username = secret_value_json['username']
+            except Exception as e:
+                print(f"Warning: Could not retrieve  access token and username token: {e}")            
             
-            username = client.get_secret(self.username_secret_name).value
+            
+            
+            
+            
             
             self._credentials = {
                 'username': username,
+                'access_token': access_token,
             }
             
-            # Prefer access token for frogml authentication
-            if self.access_token_secret_name:
-                try:
-                    access_token = client.get_secret(self.access_token_secret_name).value
-                    self._credentials['access_token'] = access_token
-                except Exception:
-                    # Access token not available
-                    pass
 
-        
         return self._credentials
     
     
