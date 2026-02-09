@@ -60,10 +60,9 @@ resource "azurerm_subnet" "function_app" {
   }
 }
 
-# Look up existing private-endpoint subnet when its name is provided.
-# This subnet must NOT be delegated — Azure prohibits private endpoints on delegated subnets.
+# Look up existing private-endpoint subnet when existing VNet and subnet name are set
 data "azurerm_subnet" "storage_private_endpoint" {
-  count                = var.existing_storage_private_endpoint_subnet_name != null ? 1 : 0
+  count                = var.existing_vnet_name != null && var.existing_storage_private_endpoint_subnet_name != null ? 1 : 0
   name                 = var.existing_storage_private_endpoint_subnet_name
   virtual_network_name = local.vnet_name
   resource_group_name  = local.vnet_resource_group_name
@@ -78,7 +77,7 @@ data "azurerm_subnet" "storage_private_endpoint" {
 #     --name <existing_function_app_integration_subnet_name> \
 #     --delegations Microsoft.App/environments
 data "azurerm_subnet" "function_app" {
-  count                = var.existing_function_app_integration_subnet_name != null ? 1 : 0
+  count                = var.existing_vnet_name != null && var.existing_function_app_integration_subnet_name != null ? 1 : 0
   name                 = var.existing_function_app_integration_subnet_name
   virtual_network_name = local.vnet_name
   resource_group_name  = local.vnet_resource_group_name
@@ -86,6 +85,6 @@ data "azurerm_subnet" "function_app" {
 
 # Effective subnet IDs for private endpoint and Function App (created or existing)
 locals {
-  storage_private_endpoint_subnet_id = var.existing_storage_private_endpoint_subnet_name != null ? data.azurerm_subnet.storage_private_endpoint[0].id : azurerm_subnet.storage_private_endpoint[0].id
-  function_app_integration_subnet_id = var.existing_function_app_integration_subnet_name != null ? data.azurerm_subnet.function_app[0].id : azurerm_subnet.function_app[0].id
+  storage_private_endpoint_subnet_id = var.existing_vnet_name != null && var.existing_storage_private_endpoint_subnet_name != null ? data.azurerm_subnet.storage_private_endpoint[0].id : azurerm_subnet.storage_private_endpoint[0].id
+  function_app_integration_subnet_id = var.existing_vnet_name != null && var.existing_function_app_integration_subnet_name != null ? data.azurerm_subnet.function_app[0].id : azurerm_subnet.function_app[0].id
 }
