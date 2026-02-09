@@ -120,6 +120,12 @@ variable "function_app_storage_account_name" {
   default     = null
 }
 
+variable "storage_soft_delete_retention_days" {
+  description = "Number of days to retain soft-deleted blobs and containers in the Function App storage account"
+  type        = number
+  default     = 30
+}
+
 # ──────────────────────────────────────────────
 # VNet and subnets (storage private endpoint + Function App integration)
 # ──────────────────────────────────────────────

@@ -28,21 +28,23 @@ locals {
   vnet_id                  = var.existing_vnet_name != null ? data.azurerm_virtual_network.existing[0].id : azurerm_virtual_network.vnet[0].id
 }
 
-# Create private-endpoint subnet when not using existing subnets
+# Create private-endpoint subnet when not using an existing PE subnet.
+# This subnet must NOT have any delegations — Azure does not allow
+# private endpoints in a delegated subnet.
 resource "azurerm_subnet" "storage_private_endpoint" {
-  count                = (var.existing_vnet_name == null || var.existing_storage_private_endpoint_subnet_name == null) ? 1 : 0
+  count                = var.existing_storage_private_endpoint_subnet_name == null ? 1 : 0
   name                 = var.storage_private_endpoint_subnet_name
   resource_group_name  = local.vnet_resource_group_name
   virtual_network_name = local.vnet_name
   address_prefixes     = [var.storage_private_endpoint_subnet_prefix]
 }
 
-# Create Function App integration subnet when not using existing subnets.
+# Create Function App integration subnet when not using an existing integration subnet.
 # Flex Consumption (FC1) requires delegation to Microsoft.App/environments.
 # Prerequisite: register the Microsoft.App resource provider in the subscription
 # (e.g. az provider register -n Microsoft.App); Terraform does not register it.
 resource "azurerm_subnet" "function_app" {
-  count                = (var.existing_vnet_name == null || var.existing_function_app_integration_subnet_name == null) ? 1 : 0
+  count                = var.existing_function_app_integration_subnet_name == null ? 1 : 0
   name                 = var.function_app_integration_subnet_name
   resource_group_name  = local.vnet_resource_group_name
   virtual_network_name = local.vnet_name
@@ -58,9 +60,10 @@ resource "azurerm_subnet" "function_app" {
   }
 }
 
-# Look up existing private-endpoint subnet when existing VNet and subnet name are set
+# Look up existing private-endpoint subnet when its name is provided.
+# This subnet must NOT be delegated — Azure prohibits private endpoints on delegated subnets.
 data "azurerm_subnet" "storage_private_endpoint" {
-  count                = var.existing_vnet_name != null && var.existing_storage_private_endpoint_subnet_name != null ? 1 : 0
+  count                = var.existing_storage_private_endpoint_subnet_name != null ? 1 : 0
   name                 = var.existing_storage_private_endpoint_subnet_name
   virtual_network_name = local.vnet_name
   resource_group_name  = local.vnet_resource_group_name
@@ -75,7 +78,7 @@ data "azurerm_subnet" "storage_private_endpoint" {
 #     --name <existing_function_app_integration_subnet_name> \
 #     --delegations Microsoft.App/environments
 data "azurerm_subnet" "function_app" {
-  count                = var.existing_vnet_name != null && var.existing_function_app_integration_subnet_name != null ? 1 : 0
+  count                = var.existing_function_app_integration_subnet_name != null ? 1 : 0
   name                 = var.existing_function_app_integration_subnet_name
   virtual_network_name = local.vnet_name
   resource_group_name  = local.vnet_resource_group_name
@@ -83,6 +86,6 @@ data "azurerm_subnet" "function_app" {
 
 # Effective subnet IDs for private endpoint and Function App (created or existing)
 locals {
-  storage_private_endpoint_subnet_id = var.existing_vnet_name != null && var.existing_storage_private_endpoint_subnet_name != null ? data.azurerm_subnet.storage_private_endpoint[0].id : azurerm_subnet.storage_private_endpoint[0].id
-  function_app_integration_subnet_id = var.existing_vnet_name != null && var.existing_function_app_integration_subnet_name != null ? data.azurerm_subnet.function_app[0].id : azurerm_subnet.function_app[0].id
+  storage_private_endpoint_subnet_id = var.existing_storage_private_endpoint_subnet_name != null ? data.azurerm_subnet.storage_private_endpoint[0].id : azurerm_subnet.storage_private_endpoint[0].id
+  function_app_integration_subnet_id = var.existing_function_app_integration_subnet_name != null ? data.azurerm_subnet.function_app[0].id : azurerm_subnet.function_app[0].id
 }

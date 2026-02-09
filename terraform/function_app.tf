@@ -26,6 +26,15 @@ resource "azurerm_storage_account" "function_storage" {
   account_replication_type = "LRS"
   min_tls_version          = "TLS1_2"
 
+  blob_properties {
+    delete_retention_policy {
+      days = var.storage_soft_delete_retention_days
+    }
+    container_delete_retention_policy {
+      days = var.storage_soft_delete_retention_days
+    }
+  }
+
   tags = var.tags
 }
 
