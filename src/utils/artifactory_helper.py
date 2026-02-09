@@ -159,14 +159,7 @@ class ArtifactoryHelper:
         
         # Convert metadata to properties if provided
         properties = {}
-        ######
-        #Comment because getting error when using metadata:
-        #2025-12-02 23:16:08,020 - ERROR - frogml.storage.logging._log_config.frog_ml.__upload_entity_version:253 - Max length for Properties is 60 characters.
-        #ERROR:FilesModelVersionManager:An error occurred while logging model iris-classifier to azureml-ml-local
 
-        # if metadata and not properties:
-        #     for key, value in metadata.items():
-        #         properties[str(key)] = str(value) if not isinstance(value, (dict, list)) else str(value)
         
         try:
             # Upload model using frogml.files.log_model()
@@ -197,48 +190,6 @@ class ArtifactoryHelper:
             
         except Exception as e:
             raise Exception(f"Failed to upload model using frogml: {str(e)}")
-    
-    def verify_model_upload(
-        self,
-        ml_repo_name: str,
-        model_name: str,
-        version: str,
-        filename: str
-    ) -> bool:
-        """
-        Verify that a model was successfully uploaded to Artifactory ML Repository.
-        Uses frogml to check if model exists.
-        
-        Args:
-            ml_repo_name: Name of the ML repository
-            model_name: Name of the model
-            version: Version of the model
-            filename: Name of the uploaded file
-            
-        Returns:
-            True if model exists, False otherwise
-        """
-        # Configure frogml with credentials from Key Vault
-        self._configure_frogml()
-        
-        try:
-            # Try using frogml to verify model existence
-            if FROGML_AVAILABLE:
-                try:
-                    # Use frogml.files.get_model_info() to check if model exists
-                    model_info = frogml.files.get_model_info(
-                        repository=ml_repo_name,
-                        model_name=model_name,
-                        version=version
-                    )
-                    # If we can get the model info, it exists
-                    return model_info is not None
-                except (AttributeError, Exception) as e:
-                    # frogml method may not be available or model doesn't exist
-                    # Fall back to REST API
-                    pass
-        except Exception:
-            return False
 
     
     def download_model_from_ml_repository(

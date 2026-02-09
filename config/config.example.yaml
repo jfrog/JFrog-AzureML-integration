@@ -9,28 +9,27 @@ azure:
 key_vault:
   name: "PLACEHOLDER" # Name of the AzureML workspace Key Vault
   secrets:
-    artifactory_username: "PLACEHOLDER"
-    artifactory_access_token: "PLACEHOLDER"  
+    artifactory_access_token_secret_name: "artifactory-access-token-secret"  # name of the secret that stores the artifactory access token and username
 
 artifactory:
-  artifactory_host: "PLACEHOLDER"
+  artifactory_host: "PLACEHOLDER" # base url of the artifactory instance (e.g. https://myorg.jfrog.io)
   repositories:
-    docker: "PLACEHOLDER"  # Docker registry repository name
-    ml: "PLACEHOLDER"  # Machine Learning Repository name, used for uploading the resulting trained models to artifactory
+    docker: "PLACEHOLDER"  # Docker registry repository name (e.g."azureml-docker-virtual")
+    ml: "PLACEHOLDER"  # Machine Learning Repository name, used for uploading the resulting trained models to artifactory (e.g. "azureml-ml-local")
   image_name: "azureml-training" # name of the training image, used for building the training container
-  image_tag: "PLACEHOLDER" # tag of the training image, used for building the training container
+  image_tag: "PLACEHOLDER" # tag of the training image, used for building the training container (e.g. "4.1.12")
 
 azureml:
   compute:
-    cluster_name: "PLACEHOLDER"
-    vm_size: "PLACEHOLDER" # for example Standard_DS3_v2
+    cluster_name: "PLACEHOLDER" # name of the AzureML compute cluster (e.g. "azureml-poc-cluster1")
+    vm_size: "PLACEHOLDER" # vm size of the AzureML compute cluster (e.g. "Standard_DS3_v2")
     min_nodes: 0
     max_nodes: 1
-    managed_identity: "PLACEHOLDER" # use the resource id from the json view of the managed identity you created on the enviornment setup step 
-    managed_identity_client_id: "PLACEHOLDER" # use the client id from the managed identity you created on the enviornment setup step
+    managed_identity: "PLACEHOLDER" # use the resource id from the json view of the managed identity you created on the enviornment setup step (e.g. "/subscriptions/<subscription ID>/resourceGroups/<resource group name>/providers/Microsoft.ManagedIdentity/userAssignedIdentities/<managed identity name>")
+    managed_identity_client_id: "PLACEHOLDER" # use the client id from the managed identity you created on the enviornment setup step (e.g. "<managed identity client id>")
     
 model:
-  name: "PLACEHOLDER" # add a name for the resulting trained model
+  name: "PLACEHOLDER" # add a name for the resulting trained model (e.g. "iris-classifier")
   version_format: "v{timestamp}"  # add a version format for the resulting trained model, with this example, versions will be generated with timestamp
   upload_to_artifactory: true # set to true to upload the resulting trained model to artifactory
 

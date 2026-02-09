@@ -352,7 +352,7 @@ docker build \
 ### 3. Run Training Pipeline
 This step creats a new training job inside the AzureML workspace and runs it. the job uses the training docker container we built and pushed in the previous steps.
 
-#TODO: Remove the arti user and access and add just the secret name that Aviv is rotate. The user and the token should be included in the same value as in AWS.
+
 
 Clone config/config.example.yaml into config/config.yaml and update the missing 'PLACEHOLDER' values
 
