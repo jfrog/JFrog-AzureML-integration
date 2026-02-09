@@ -126,6 +126,12 @@ variable "storage_soft_delete_retention_days" {
   default     = 30
 }
 
+variable "function_app_source_path" {
+  description = "Path to the function app folder to zip and deploy (e.g. secret_rotation_function). When null, use default relative to module: ../secret_rotation_function from the terraform directory."
+  type        = string
+  default     = null
+}
+
 # ──────────────────────────────────────────────
 # VNet and subnets (storage private endpoint + Function App integration)
 # ──────────────────────────────────────────────

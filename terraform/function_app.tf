@@ -12,6 +12,18 @@ resource "random_string" "storage_suffix" {
 
 locals {
   function_app_storage_account_name = coalesce(var.function_app_storage_account_name, "func${random_string.storage_suffix.result}")
+  function_app_source_path          = coalesce(var.function_app_source_path, "${path.module}/../secret_rotation_function")
+}
+
+# ──────────────────────────────────────────────
+# Function app zip (deployed to Flex Consumption)
+# ──────────────────────────────────────────────
+
+data "archive_file" "function_zip" {
+  type        = "zip"
+  source_dir  = local.function_app_source_path
+  output_path = "${path.module}/function_deploy.zip"
+  excludes    = ["__pycache__", ".venv", ".git"]
 }
 
 # ──────────────────────────────────────────────
@@ -118,7 +130,7 @@ resource "azurerm_function_app_flex_consumption" "function_app" {
   name                       = var.function_app_name
   resource_group_name        = data.azurerm_resource_group.rg.name
   location                   = var.location
-  service_plan_id            = azurerm_service_plan.function_plan.id
+  service_plan_id             = azurerm_service_plan.function_plan.id
   storage_container_type     = "blobContainer"
   storage_container_endpoint = "${azurerm_storage_account.function_storage.primary_blob_endpoint}${azurerm_storage_container.function_flex.name}"
   storage_authentication_type = "StorageAccountConnectionString"
@@ -128,6 +140,7 @@ resource "azurerm_function_app_flex_consumption" "function_app" {
   virtual_network_subnet_id  = local.function_app_integration_subnet_id
   maximum_instance_count    = 50
   instance_memory_in_mb     = 2048
+  zip_deploy_file           = data.archive_file.function_zip.output_path
 
   site_config {}
 
