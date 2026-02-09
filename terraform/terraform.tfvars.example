@@ -24,6 +24,8 @@ function_app_name                 = "artifactory-token-rotation"
 # function_app_storage_account_name = null
 function_app_storage_account_name = "myfuncstorage123"
 azure_web_jobs_storage            = "UseDevelopmentStorage=true"
+# Event Grid subscription: set to false for first apply, deploy function code (KeyVaultSecretRotation), then set to true and apply again.
+# create_eventgrid_subscription = true
 
 # VNet and subnets (new VNet: set function_app_vnet_* and subnet names/prefixes; existing VNet: set existing_vnet_name and optionally existing_*_subnet_name)
 function_app_vnet_name                  = "vnet-function-app"

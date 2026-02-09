@@ -10,6 +10,10 @@ resource "azurerm_eventgrid_system_topic" "keyvault_events" {
   topic_type          = "Microsoft.KeyVault.vaults"
 
   tags = var.tags
+
+    depends_on = [
+    azurerm_function_app_flex_consumption.function_app
+  ]
 }
 
 # ──────────────────────────────────────────────
