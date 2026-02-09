@@ -154,7 +154,7 @@ def rotate_token(secret_name: str) -> None:
     secret_json = json.dumps({
         "access_token": jfrog_access_token,
         "username": jfrog_username,
-    }
+    })
     _store_token_in_key_vault(
         vault_name=vault_name,
         secret_name=secret_name,

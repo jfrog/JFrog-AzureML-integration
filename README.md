@@ -173,13 +173,15 @@ graph TB
 #### Authentication & Security
 1. **AzureML Workspace's Azure Key Vault:**
    - Stores Artifactory Access Token and Username securely
-   - The JFrog short lived Access Token is added and rotated automatically through an Azure function based on OIDC token exchnage protocol. 
-
 
 2. **Authentication Methods:**
    - **Local Development:** Uses Azure user or application registry credentials (e.g. az login)
-   - **AzureML Runtime:** Uses Managed Identity (automatic, no credentials needed) for retrieveing JFrog short lived & auto-rotating token from the AzureML Workspace Key Vault  
+   - **AzureML Runtime:** Uses Managed Identity (automatic, no credentials needed) for retrieveing JFrog access token from the AzureML Workspace Key Vault  
    - **Docker Build:** Uses Docker secrets (credentials not stored in image)
+
+#### Advanced Authentication: JFrog token auto-rotation
+For more advanced security setup, a JFrog short lived Access Token can be added and rotated automatically through an Azure function based on OIDC token exchange protocol.
+For this setup, see the optional terraform and function script on this repository under secret_rotation_function folder.
 
 
 ### Key Integration Points
@@ -198,7 +200,7 @@ graph TB
 - **Resulting Models:** Uploaded to Artifactory ML Repository using Frogml SDK
 
 #### Authentication
-- **JFrog Credentials:** Token exchange is based on OIDC
+- **JFrog Credentials:** The authentication is based on JFrog access token stored on Azure Key Vault, with an optional setup of an Azure function for rotating this access token automatically based on OIDC token exchange protocol
 
 ### Sequence Diagram
 #### Training
@@ -286,9 +288,7 @@ sequenceDiagram
 - **Runtime:** Azure Key Vault + Managed Identity (no hardcoded secrets)
 - **Network:** All communications over HTTPS
 - **Access Control:** Role-based access via Azure and Artifactory
-- **Used Credentials:** Short lived JFrog Access Token auto-rotated by Azure function. with token rotation based on OIDC and Azure App. registration & Managed Identity
-
-
+- **Used Credentials:** JFrog access token stored on Azure Key Vault, with an optional enhanced setup allowing for auto-rotated access tokens managed by Azure function. with token rotation based on OIDC and Azure App. registration & Managed Identity (see advanced setup under secret_rotation_function sub folder)
 
 
 ## Quick Start
