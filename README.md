@@ -304,6 +304,8 @@ sequenceDiagram
     3. inside the Azure ML workspace key vault, open the Access control (IAM)
     4. Add role assignment to role "Key Vault Secrets User" for the managed identity you created above    
     5. Still inside the Workspace Keyvault entity Open > settings > Access Configuration settings and Make sure 'Azure role-based access control (recommended)' is selected
+    6. create keyvault secret containing the JFrog access token and username
+    `` az keyvault secret set --vault-name ctoaazuremlpoc5615636730 --name artifactory-access-token-secret --value '{"access_token":"<ACCESS TOKEN>","username":"<USERNAME>"}' ``
 
 ### JFrog Setup (R&R: JFrog Administrator or Project Admin)
 ### Prerequisites
