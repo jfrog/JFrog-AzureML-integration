@@ -73,6 +73,7 @@ terraform/.terraform/
 secret_rotation_function/terraform/.terraform/
 terraform/.terraform.lock.hcl
 terraform/terraform.tfvars
+<<<<<<< HEAD
 secret_rotation_function/terraform/function_deploy.zip
 secret_rotation_function/deploy.zip
 secret_rotation_function/terraform/terraform.tfvars
@@ -80,6 +81,9 @@ secret_rotation_function/terraform/terraform.tfstate
 secret_rotation_function/terraform/terraform.tfstate.backup
 
 
+=======
+terraform/terraform.tfstate
+>>>>>>> 8670714 (Update .gitignotr)
 
 # Azure
 __azurite_db_blob_extent__.json
