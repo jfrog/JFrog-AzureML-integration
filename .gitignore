@@ -65,6 +65,7 @@ setup_env.sh
 downloaded_artifacts/*
 
 # Terraform
+secret_rotation_function/terraform.old
 secret_rotation_function/terraform.old/terraform.tfvars
 secret_rotation_function/terraform.old/terraform.tfstate
 secret_rotation_function/terraform.old/terraform.tfstate.backup 
