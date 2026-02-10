@@ -65,9 +65,17 @@ setup_env.sh
 downloaded_artifacts/*
 
 # Terraform
+secret_rotation_function/terraform.old/terraform.tfvars
+secret_rotation_function/terraform.old/terraform.tfstate
+secret_rotation_function/terraform.old/terraform.tfstate.backup 
 terraform/.terraform/*
 terraform/.terraform.lock.hcl
 terraform/terraform.tfvars
+secret_rotation_function/terraform/function_deploy.zip
+secret_rotation_function/deploy.zip
+secret_rotation_function/terraform/terraform.tfvars
+secret_rotation_function/terraform/terraform.tfstate
+secret_rotation_function/terraform/terraform.tfstate.backup
 
 
 # Azure

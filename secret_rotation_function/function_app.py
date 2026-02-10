@@ -120,6 +120,8 @@ def rotate_token(secret_name: str) -> None:
     artifactory_url = os.environ["ARTIFACTORY_URL"]
     provider_name = os.environ["JFROG_OIDC_PROVIDER_NAME"]
     audience = os.environ["AZURE_AD_TOKEN_AUDIENCE"]
+    secret_ttl = os.environ["SECRET_TTL"]
+
     token_secret_name = os.environ.get("ARTIFACTORY_TOKEN_SECRET_NAME", "artifactory-access-token")
 
     # Only rotate the Artifactory token secret
@@ -164,10 +166,24 @@ def rotate_token(secret_name: str) -> None:
 
     logger.info("✓ Token rotation completed for secret: %s", secret_name)
 
+def _ttl_seconds_to_cron() -> str:
+    ttl_seconds = int(os.environ.get("SECRET_TTL", "21600"))  # e.g. 6 hours
+    # Run at 80% of TTL
+    interval_seconds = int(ttl_seconds * 0.8)
+    logger.info("Interval seconds: %s", interval_seconds)
+    
+    if interval_seconds < 3600:
+        minutes = max(1, interval_seconds // 60)
+        return f"0 */{minutes} * * * *"
+    if interval_seconds < 86400:
+        hours = max(1, interval_seconds // 3600)
+        return f"0 0 */{hours} * * *"
 
 @app.function_name(name="KeyVaultSecretRotation")
-@app.event_grid_trigger(arg_name="event")
-def key_vault_secret_rotation(event: func.EventGridEvent) -> None:
+###@app.event_grid_trigger(arg_name="event")
+@app.timer_trigger(schedule=_ttl_seconds_to_cron(), arg_name="myTimer", run_on_startup=False,
+              use_monitor=False)
+def key_vault_secret_rotation(myTimer: func.TimerRequest) -> None:
     """
     Azure Function triggered by Key Vault SecretNearExpiry event via Event Grid.
     Rotates the JFrog Artifactory access token by performing OIDC token exchange.

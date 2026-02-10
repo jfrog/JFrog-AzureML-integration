@@ -1,0 +1,28 @@
+# ──────────────────────────────────────────────────────
+# Example Terraform variable values
+# Copy to terraform.tfvars and fill in your values
+# ──────────────────────────────────────────────────────
+
+subscription_id     = "YOUR_AZURE_SUBSCRIPTION_ID"
+resource_group_name = "YOUR_RESOURCE_GROUP"
+location            = "East US"
+
+# Existing Azure ML workspace Key Vault (data source only; not created by this Terraform)
+key_vault_name = "YOUR_AML_WORKSPACE_KEY_VAULT_NAME"
+# key_vault_resource_group_name = "YOUR_KEY_VAULT_RG"  # optional; defaults to resource_group_name
+
+# Existing Azure ML workspace Storage Account (data source only; a new container is created for the function)
+existing_storage_account_name = "YOUR_AML_WORKSPACE_STORAGE_ACCOUNT_NAME"
+# existing_storage_resource_group_name = "YOUR_STORAGE_RG"  # optional; defaults to resource_group_name
+# function_storage_container_name = "azure-function-token-rotation"  # dedicated container for the function
+
+# Artifactory / token rotation
+artifactory_url          = "https://yourorg.jfrog.io"
+jfrog_oidc_provider_name = "YOUR_OIDC_PROVIDER_NAME"
+azure_ad_token_audience  = "api://YOUR_APP_REGISTRATION_CLIENT_ID"
+# artifactory_token_secret_name = "artifactory-access-token"
+# secret_ttl = "21600"  # seconds (6 hours)
+
+# Function App
+function_app_name = "artifactory-token-rotation"
+# function_python_version = "3.12"
