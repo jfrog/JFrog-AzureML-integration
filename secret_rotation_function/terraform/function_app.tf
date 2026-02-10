@@ -22,6 +22,7 @@ resource "azurerm_linux_function_app" "function_app" {
   location                      = var.location
   service_plan_id               = azurerm_service_plan.function_plan.id
   storage_account_name          = data.azurerm_storage_account.existing.name
+  webdeploy_publish_basic_authentication_enabled = true
   
   # 1. This enables Identity-based connection (Modern approach)
   storage_uses_managed_identity = true
@@ -46,8 +47,6 @@ resource "azurerm_linux_function_app" "function_app" {
     SCM_DO_BUILD_DURING_DEPLOYMENT = "true"
     ENABLE_ORYX_BUILD              = "true"
 
-    # 4. FIXED: Check if this variable is correct. Usually this is the User Assigned ID client ID.
-    # AZURE_CLIENT_ID             = var.azure_client_id 
   }
 
   site_config {

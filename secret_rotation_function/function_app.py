@@ -110,7 +110,7 @@ def _store_token_in_key_vault(
     logger.info("✓ Token stored in Key Vault secret: %s", secret_name)
 
 
-def rotate_token(secret_name: str) -> None:
+def rotate_token() -> None:
     """
     Core rotation logic: exchange Azure AD token for a new JFrog token
     and store it in Key Vault.
@@ -124,16 +124,9 @@ def rotate_token(secret_name: str) -> None:
 
     token_secret_name = os.environ.get("ARTIFACTORY_TOKEN_SECRET_NAME", "artifactory-access-token")
 
-    # Only rotate the Artifactory token secret
-    if secret_name != token_secret_name:
-        logger.info(
-            "Ignoring near-expiry event for secret '%s' (not the Artifactory token secret '%s')",
-            secret_name,
-            token_secret_name,
-        )
-        return
 
-    logger.info("Starting token rotation for secret: %s", secret_name)
+
+    logger.info("Starting token rotation for secret: %s", token_secret_name)
 
     # Step 1: Get Azure AD token for the Entra ID app registration
     logger.info("Acquiring Azure AD token for audience: %s", audience)
@@ -159,12 +152,12 @@ def rotate_token(secret_name: str) -> None:
     })
     _store_token_in_key_vault(
         vault_name=vault_name,
-        secret_name=secret_name,
+        secret_name=token_secret_name,
         token_value=secret_json,
         expires_in=expires_in,
     )
 
-    logger.info("✓ Token rotation completed for secret: %s", secret_name)
+    logger.info("✓ Token rotation completed for secret: %s", token_secret_name)
 
 def _ttl_seconds_to_cron() -> str:
     ttl_seconds = int(os.environ.get("SECRET_TTL", "21600"))  # e.g. 6 hours
@@ -180,7 +173,7 @@ def _ttl_seconds_to_cron() -> str:
         return f"0 0 */{hours} * * *"
 
 @app.function_name(name="KeyVaultSecretRotation")
-###@app.event_grid_trigger(arg_name="event")
+
 @app.timer_trigger(schedule=_ttl_seconds_to_cron(), arg_name="myTimer", run_on_startup=False,
               use_monitor=False)
 def key_vault_secret_rotation(myTimer: func.TimerRequest) -> None:
@@ -188,17 +181,13 @@ def key_vault_secret_rotation(myTimer: func.TimerRequest) -> None:
     Azure Function triggered by Key Vault SecretNearExpiry event via Event Grid.
     Rotates the JFrog Artifactory access token by performing OIDC token exchange.
     """
-    logger.info("Received Event Grid event: %s", event.event_type)
+
     logger.info("Event subject: %s", event.subject)
 
-    event_data = event.get_json()
-    secret_name = event_data.get("ObjectName", "")
 
-    logger.info("Secret name from event: %s", secret_name)
-    logger.info("Vault name from event: %s", event_data.get("VaultName", ""))
 
     try:
-        rotate_token(secret_name)
+        rotate_token()
     except KeyError as e:
         logger.error("Missing required environment variable: %s", e)
         raise
