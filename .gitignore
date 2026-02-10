@@ -79,6 +79,7 @@ secret_rotation_function/terraform/terraform.tfstate
 secret_rotation_function/terraform/terraform.tfstate.backup
 
 
+
 # Azure
 __azurite_db_blob_extent__.json
 __azurite_db_blob__.json
