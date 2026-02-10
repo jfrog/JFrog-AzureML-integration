@@ -176,6 +176,8 @@ def _ttl_seconds_to_cron() -> str:
 
 @app.timer_trigger(schedule=_ttl_seconds_to_cron(), arg_name="myTimer", run_on_startup=False,
               use_monitor=False)
+# @app.timer_trigger(schedule="0 0 */4 * * *", arg_name="myTimer", run_on_startup=False,
+#               use_monitor=False)
 def key_vault_secret_rotation(myTimer: func.TimerRequest) -> None:
     """
     Azure Function triggered by Key Vault SecretNearExpiry event via Event Grid.

@@ -1,3 +1,4 @@
+
 # ──────────────────────────────────────────────
 # App Service Plan (Linux Consumption Y1)
 # ──────────────────────────────────────────────
@@ -22,7 +23,7 @@ resource "azurerm_linux_function_app" "function_app" {
   location                      = var.location
   service_plan_id               = azurerm_service_plan.function_plan.id
   storage_account_name          = data.azurerm_storage_account.existing.name
-  webdeploy_publish_basic_authentication_enabled = true
+
   
   # 1. This enables Identity-based connection (Modern approach)
   storage_uses_managed_identity = true
@@ -41,7 +42,8 @@ resource "azurerm_linux_function_app" "function_app" {
     ARTIFACTORY_TOKEN_SECRET_NAME = var.artifactory_token_secret_name
     SECRET_TTL                    = var.secret_ttl
     AZURE_CLIENT_ID               = var.azure_ad_token_audience
-    AzureWebJobsStorage           = var.azure_web_jobs_storage
+    #AzureWebJobsStorage          = var.azure_web_jobs_storage
+    AzureWebJobsStorage           = data.azurerm_storage_account.existing.primary_connection_string
 
     # Enable Remote Build (zip deploy with --build-remote; func publish may still need storage key for upload)
     SCM_DO_BUILD_DURING_DEPLOYMENT = "true"
