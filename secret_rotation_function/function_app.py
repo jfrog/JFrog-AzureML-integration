@@ -1,6 +1,6 @@
 """
 Azure Function: JFrog Artifactory Token Rotation
-Triggered by Key Vault SecretNearExpiry event via Event Grid.
+Triggered by Timer.
 Exchanges an Azure AD token for a new JFrog access token using OIDC token exchange,
 then stores the new token back in Key Vault.
 """
@@ -180,13 +180,9 @@ def _ttl_seconds_to_cron() -> str:
 #               use_monitor=False)
 def key_vault_secret_rotation(myTimer: func.TimerRequest) -> None:
     """
-    Azure Function triggered by Key Vault SecretNearExpiry event via Event Grid.
+    Azure Function triggered by Timer
     Rotates the JFrog Artifactory access token by performing OIDC token exchange.
     """
-
-    logger.info("Event subject: %s", event.subject)
-
-
 
     try:
         rotate_token()
