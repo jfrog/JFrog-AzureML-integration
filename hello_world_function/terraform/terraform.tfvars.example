@@ -1,0 +1,5 @@
+resource_group_name  = "akvrotation"
+location             = "eastus"
+resource_name_prefix = "akvrotation"
+function_app_name    = "akvrotation-fnapp"
+secret_name          = "sqlPassword"
