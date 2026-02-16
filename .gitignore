@@ -16,6 +16,7 @@ htmlcov/
 *.egg-info/
 dist/
 build/
+.python_packages/
 
 # Config
 config/config.yaml
@@ -83,3 +84,4 @@ terraform/terraform.tfstate
 # Azure
 __azurite_db_blob_extent__.json
 __azurite_db_blob__.json
+__blobstorage__/AzuriteConfig
