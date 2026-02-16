@@ -14,7 +14,7 @@ data "azurerm_key_vault" "existing" {
 resource "azurerm_role_assignment" "function_kv_secrets_officer" {
   scope                = data.azurerm_key_vault.existing.id
   role_definition_name = "Key Vault Secrets Officer"
-  principal_id         = azurerm_linux_function_app.function_app.identity[0].principal_id
+  principal_id         = azurerm_function_app_flex_consumption.function_app.identity[0].principal_id
 
-  depends_on = [azurerm_linux_function_app.function_app]
+  depends_on = [azurerm_function_app_flex_consumption.function_app]
 }

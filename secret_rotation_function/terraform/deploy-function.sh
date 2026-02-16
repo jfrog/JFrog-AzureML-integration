@@ -1,10 +1,8 @@
 #!/usr/bin/env bash
-# Deploy the function app to Azure using Azure Functions Core Tools (func CLI).
-# Uses --build local to package dependencies on-device and upload via the
-# management API (no storage keys needed).
+# Deploy the function app to Azure using az CLI zip deploy with remote build.
+# This is more reliable than `func publish` on Linux Consumption plans.
 # Run from this directory (secret_rotation_function/terraform). Requires:
 #   - Azure CLI (az) logged in
-#   - Azure Functions Core Tools (func) installed
 #   - Terraform already applied (terraform output available)
 set -e
 
@@ -24,12 +22,27 @@ fi
 RG_NAME="$(terraform output -raw resource_group_name)"
 FUNCTION_APP_NAME="$(terraform output -raw function_app_name)"
 
-if ! command -v func &>/dev/null; then
-  echo "Error: Azure Functions Core Tools (func) not found. Install from: https://docs.microsoft.com/azure/azure-functions/functions-run-local" >&2
-  exit 1
-fi
+# Create zip from source directory (exclude terraform dir and other non-function files)
+ZIP_FILE="$TERRAFORM_DIR/function_app.zip"
+echo "Creating zip package from $SOURCE_DIR ..."
+(cd "$SOURCE_DIR" && zip -r "$ZIP_FILE" . \
+  -x "terraform/*" \
+  -x ".funcignore" \
+  -x "__pycache__/*" \
+  -x ".python_packages/*" \
+  -x ".venv/*" \
+  -x "*.pyc" \
+)
 
-echo "Publishing to Function App: $FUNCTION_APP_NAME (resource group: $RG_NAME) ..."
-(cd "$SOURCE_DIR" && func azure functionapp publish "$FUNCTION_APP_NAME" --python --build local --debug)
+echo "Deploying to Function App: $FUNCTION_APP_NAME (resource group: $RG_NAME) ..."
+az functionapp deployment source config-zip \
+  --resource-group "$RG_NAME" \
+  --name "$FUNCTION_APP_NAME" \
+  --src "$ZIP_FILE" \
+  --build-remote true \
+  --timeout 600
+
+echo "Cleaning up zip ..."
+rm -f "$ZIP_FILE"
 
 echo "Done."

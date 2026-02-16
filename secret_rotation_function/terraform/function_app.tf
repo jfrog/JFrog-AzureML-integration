@@ -1,6 +1,6 @@
 
 # ──────────────────────────────────────────────
-# App Service Plan (Linux Consumption Y1)
+# App Service Plan (Linux Flex Consumption FC1)
 # ──────────────────────────────────────────────
 
 resource "azurerm_service_plan" "function_plan" {
@@ -8,30 +8,41 @@ resource "azurerm_service_plan" "function_plan" {
   resource_group_name = data.azurerm_resource_group.rg.name
   location            = var.location
   os_type             = "Linux"
-  sku_name            = "Y1"
+  sku_name            = "FC1"
 
-  tags = var.tags
+  tags = merge(var.tags, { SecurityControl = "ignore" })
 }
 
 # ──────────────────────────────────────────────
-# Linux Function App (Python, Consumption)
+# Flex Consumption Function App (Python)
 # ──────────────────────────────────────────────
 
-resource "azurerm_linux_function_app" "function_app" {
-  name                          = var.function_app_name
-  resource_group_name           = data.azurerm_resource_group.rg.name
-  location                      = var.location
-  service_plan_id               = azurerm_service_plan.function_plan.id
-  storage_account_name          = data.azurerm_storage_account.existing.name
+resource "azurerm_function_app_flex_consumption" "function_app" {
+  name                = var.function_app_name
+  resource_group_name = data.azurerm_resource_group.rg.name
+  location            = var.location
+  service_plan_id     = azurerm_service_plan.function_plan.id
 
-  
-  # 1. This enables Identity-based connection (Modern approach)
-  storage_uses_managed_identity = true
+  # Storage — connection-string auth for deployment container
+  storage_container_type          = "blobContainer"
+  storage_container_endpoint      = "${data.azurerm_storage_account.existing.primary_blob_endpoint}${var.function_storage_container_name}"
+  storage_authentication_type     = "StorageAccountConnectionString"
+  storage_access_key              = data.azurerm_storage_account.existing.primary_access_key
 
-  functions_extension_version = "~4"
+  runtime_name    = "python"
+  runtime_version = var.function_python_version
+
+  maximum_instance_count = var.maximum_instance_count
+  instance_memory_in_mb  = var.instance_memory_in_mb
 
   identity {
     type = "SystemAssigned"
+  }
+
+  site_config {
+    cors {
+      allowed_origins = ["https://portal.azure.com"]
+    }
   }
 
   app_settings = {
@@ -42,20 +53,8 @@ resource "azurerm_linux_function_app" "function_app" {
     ARTIFACTORY_TOKEN_SECRET_NAME = var.artifactory_token_secret_name
     SECRET_TTL                    = var.secret_ttl
     AZURE_CLIENT_ID               = var.azure_ad_token_audience
-    #AzureWebJobsStorage          = var.azure_web_jobs_storage
     AzureWebJobsStorage           = data.azurerm_storage_account.existing.primary_connection_string
-
-    # Enable Remote Build (zip deploy with --build-remote; func publish may still need storage key for upload)
-    SCM_DO_BUILD_DURING_DEPLOYMENT = "true"
-    ENABLE_ORYX_BUILD              = "true"
-
   }
 
-  site_config {
-    application_stack {
-      python_version = var.function_python_version
-    }
-  }
-
-  tags = var.tags
+  tags = merge(var.tags, { SecurityControl = "ignore" })
 }

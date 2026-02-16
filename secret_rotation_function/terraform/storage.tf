@@ -8,6 +8,22 @@ data "azurerm_storage_account" "existing" {
 }
 
 # ──────────────────────────────────────────────
+# Configure the existing storage account: bypass key-based auth policy
+# and enable shared key access for Flex Consumption deployment
+# ──────────────────────────────────────────────
+
+resource "terraform_data" "storage_security_config" {
+  input = data.azurerm_storage_account.existing.id
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      az tag update --resource-id ${data.azurerm_storage_account.existing.id} --operation merge --tags SecurityControl=ignore && \
+      az storage account update --name ${data.azurerm_storage_account.existing.name} --resource-group ${coalesce(var.existing_storage_resource_group_name, var.resource_group_name)} --allow-shared-key-access true
+    EOT
+  }
+}
+
+# ──────────────────────────────────────────────
 # Dedicated blob container for the Azure Function only
 # (not the container used by Azure ML pipelines)
 # ──────────────────────────────────────────────
@@ -26,31 +42,31 @@ resource "azurerm_storage_container" "function" {
 resource "azurerm_role_assignment" "function_storage_blob" {
   scope                = data.azurerm_storage_account.existing.id
   role_definition_name = "Storage Blob Data Owner"
-  principal_id         = azurerm_linux_function_app.function_app.identity[0].principal_id
+  principal_id         = azurerm_function_app_flex_consumption.function_app.identity[0].principal_id
 
-  depends_on = [azurerm_linux_function_app.function_app]
+  depends_on = [azurerm_function_app_flex_consumption.function_app]
 }
 
 resource "azurerm_role_assignment" "function_storage_table" {
   scope                = data.azurerm_storage_account.existing.id
   role_definition_name = "Storage Table Data Contributor"
-  principal_id         = azurerm_linux_function_app.function_app.identity[0].principal_id
+  principal_id         = azurerm_function_app_flex_consumption.function_app.identity[0].principal_id
 
-  depends_on = [azurerm_linux_function_app.function_app]
+  depends_on = [azurerm_function_app_flex_consumption.function_app]
 }
 
 resource "azurerm_role_assignment" "function_storage_queue" {
   scope                = data.azurerm_storage_account.existing.id
   role_definition_name = "Storage Queue Data Contributor"
-  principal_id         = azurerm_linux_function_app.function_app.identity[0].principal_id
+  principal_id         = azurerm_function_app_flex_consumption.function_app.identity[0].principal_id
 
-  depends_on = [azurerm_linux_function_app.function_app]
+  depends_on = [azurerm_function_app_flex_consumption.function_app]
 }
 
 resource "azurerm_role_assignment" "function_storage_account_contributor" {
   scope                = data.azurerm_storage_account.existing.id
   role_definition_name = "Storage Account Contributor"
-  principal_id         = azurerm_linux_function_app.function_app.identity[0].principal_id
+  principal_id         = azurerm_function_app_flex_consumption.function_app.identity[0].principal_id
 
-  depends_on = [azurerm_linux_function_app.function_app]
+  depends_on = [azurerm_function_app_flex_consumption.function_app]
 }

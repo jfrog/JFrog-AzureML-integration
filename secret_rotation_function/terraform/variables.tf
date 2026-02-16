@@ -110,3 +110,15 @@ variable "function_python_version" {
   default     = "3.12"
 }
 
+variable "maximum_instance_count" {
+  description = "Maximum number of instances for the Flex Consumption function app"
+  type        = number
+  default     = 100
+}
+
+variable "instance_memory_in_mb" {
+  description = "Memory allocation per instance in MB for the Flex Consumption function app"
+  type        = number
+  default     = 2048
+}
+
