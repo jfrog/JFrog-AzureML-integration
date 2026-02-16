@@ -16,6 +16,7 @@ htmlcov/
 *.egg-info/
 dist/
 build/
+.python_packages/
 
 # Config
 .cursor/
@@ -83,3 +84,4 @@ secret_rotation_function/deploy.zip
 # Azure
 __azurite_db_blob_extent__.json
 __azurite_db_blob__.json
+__blobstorage__/AzuriteConfig
