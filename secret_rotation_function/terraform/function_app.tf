@@ -59,10 +59,3 @@ resource "azurerm_linux_function_app" "function_app" {
 
   tags = var.tags
 }
-
-# 5. REQUIRED: Grant the Function App permission to access storage
-resource "azurerm_role_assignment" "storage_blob_data_owner" {
-  scope                = data.azurerm_storage_account.existing.id
-  role_definition_name = "Storage Blob Data Owner"
-  principal_id         = azurerm_linux_function_app.function_app.identity[0].principal_id
-}

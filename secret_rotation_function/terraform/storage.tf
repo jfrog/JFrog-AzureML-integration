@@ -25,7 +25,7 @@ resource "azurerm_storage_container" "function" {
 
 resource "azurerm_role_assignment" "function_storage_blob" {
   scope                = data.azurerm_storage_account.existing.id
-  role_definition_name = "Storage Blob Data Contributor"
+  role_definition_name = "Storage Blob Data Owner"
   principal_id         = azurerm_linux_function_app.function_app.identity[0].principal_id
 
   depends_on = [azurerm_linux_function_app.function_app]
@@ -42,6 +42,14 @@ resource "azurerm_role_assignment" "function_storage_table" {
 resource "azurerm_role_assignment" "function_storage_queue" {
   scope                = data.azurerm_storage_account.existing.id
   role_definition_name = "Storage Queue Data Contributor"
+  principal_id         = azurerm_linux_function_app.function_app.identity[0].principal_id
+
+  depends_on = [azurerm_linux_function_app.function_app]
+}
+
+resource "azurerm_role_assignment" "function_storage_account_contributor" {
+  scope                = data.azurerm_storage_account.existing.id
+  role_definition_name = "Storage Account Contributor"
   principal_id         = azurerm_linux_function_app.function_app.identity[0].principal_id
 
   depends_on = [azurerm_linux_function_app.function_app]
