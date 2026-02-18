@@ -53,7 +53,8 @@ def _get_azure_ad_token(audience: str) -> str:
 def _exchange_token_for_jfrog_access_token(
     artifactory_url: str,
     azure_ad_token: str,
-    provider_name: str
+    provider_name: str,
+    scope: str
 ) -> dict:
     """
     Exchange an Azure AD token for a JFrog access token using OIDC token exchange.
@@ -71,11 +72,12 @@ def _exchange_token_for_jfrog_access_token(
     payload = {
         "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange",
         "subject_token_type": "urn:ietf:params:oauth:token-type:id_token",
-        "subject_token": azure_ad_token,
-        "provider_name": provider_name,
+        "subject_token": f"{azure_ad_token}",
+        "provider_name": f"{provider_name}",
+        "provider_type": "oidc-azure"
     }
-
-    response = requests.post(exchange_url, data=payload, timeout=30)
+    payload_json = json.dumps(payload)
+    response = requests.post(exchange_url, data=payload_json, timeout=30,headers={"Content-Type": "application/json"})
     response.raise_for_status()
 
     return response.json()
@@ -139,6 +141,7 @@ def rotate_token() -> None:
         artifactory_url=artifactory_url,
         azure_ad_token=azure_ad_token,
         provider_name=provider_name,
+        scope=audience
     )
     jfrog_access_token = token_response["access_token"]
     jfrog_username = token_response["username"]
@@ -147,8 +150,8 @@ def rotate_token() -> None:
 
     # Step 3: Store new token in Key Vault
     secret_json = json.dumps({
-        "access_token": jfrog_access_token,
-        "username": jfrog_username,
+        "access_token": f"{jfrog_access_token}",
+        "username": f"{jfrog_username}",
     })
     _store_token_in_key_vault(
         vault_name=vault_name,
