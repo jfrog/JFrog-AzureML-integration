@@ -15,7 +15,7 @@ variable "resource_group_name" {
 variable "location" {
   description = "Azure region for all resources"
   type        = string
-  default     = "East US"
+  default     = "Sweden Central"
 }
 
 variable "tags" {
@@ -25,7 +25,7 @@ variable "tags" {
     project     = "jfrog-azureml-integration"
     managed_by  = "terraform"
     environment = "dev"
-  a pplication = "azureml"
+    application = "azureml"
   }
 }
 
@@ -115,7 +115,7 @@ variable "function_app_name" {
 variable "function_python_version" {
   description = "Python version for the Function App runtime"
   type        = string
-  default     = "3.12"
+  default     = "3.13"
 }
 
 variable "azure_web_jobs_storage" {

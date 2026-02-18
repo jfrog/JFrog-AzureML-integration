@@ -5,7 +5,7 @@
 
 subscription_id     = "YOUR_AZURE_SUBSCRIPTION_ID"
 resource_group_name = "YOUR_RESOURCE_GROUP"
-location            = "East US"
+# location            = "Sweden Central"
 
 # Existing Azure ML workspace Key Vault (data source only; not created by this Terraform)
 key_vault_name = "YOUR_AML_WORKSPACE_KEY_VAULT_NAME"
@@ -19,15 +19,15 @@ existing_storage_account_name = "YOUR_AML_WORKSPACE_STORAGE_ACCOUNT_NAME"
 # Artifactory / token rotation
 artifactory_url          = "https://yourorg.jfrog.io"
 jfrog_oidc_provider_name = "YOUR_OIDC_PROVIDER_NAME"
-azure_ad_token_audience  = "api://YOUR_APP_REGISTRATION_CLIENT_ID"
-# artifactory_token_secret_name = "artifactory-access-token"
-# Set to have Terraform create the secret in Key Vault with that name; leave unset to create it manually
+azure_ad_token_audience  = "YOUR_APP_REGISTRATION_CLIENT_ID"
+# artifactory_token_secret_name = "artifactory-access-token-secret"
+# Set to have Terraform create the secret in Key Vault with that name; leave unset to create it manually by key Vault Admin
 # artifactory_token_initial_value = "YOUR_INITIAL_TOKEN_OR_PLACEHOLDER"
 # secret_ttl = "21600"  # seconds (6 hours)
 
 # Function App
 function_app_name = "artifactory-token-rotation"
-# function_python_version = "3.12"
+# function_python_version = "3.13"
 
 # VNet integration (optional): existing subnet with (1) delegation Microsoft.Web/serverFarms,
 # (2) service_endpoints = ["Microsoft.Storage", "Microsoft.KeyVault"], (3) same region as function app
@@ -41,9 +41,9 @@ function_app_name = "artifactory-token-rotation"
 # application_insights_key               = "YOUR_INSTRUMENTATION_KEY"
 
 # Tags (optional)
-#tags = {
+# tags = {
 #  project     = "jfrog-azureml-integration"
 #  managed_by  = "terraform"
 #  environment = "dev"
 #  application = "azureml"
-#}
+# }

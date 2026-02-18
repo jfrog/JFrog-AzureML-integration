@@ -19,12 +19,12 @@ prefix      = "ml"
 # compute_cluster_vm_size        = "Standard_DS3_v2"
 
 # Allowed IPs for Key Vault and Storage (required for network rules)
-ip_rules = ["1.2.3.4/32", "NAT_IP"]
+# ip_rules = ["1.2.3.4/32", "NAT_IP"]
 
 # Tags (optional)
-tags = {
-  project     = "jfrog-azureml-integration"
-  managed_by  = "terraform"
-  environment = "dev"
-  application = "azureml"
-}
+# tags = {
+#  project     = "jfrog-azureml-integration"
+#  managed_by  = "terraform"
+#  environment = "dev"
+#  application = "azureml"
+# }
