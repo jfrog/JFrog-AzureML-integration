@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Deploy the function app to Azure using Azure Functions Core Tools (func CLI).
+# Deploy the function app to Azure using az CLI zip deploy with remote build.
+# This is more reliable than `func publish` on Linux Consumption plans.
 # Run from this directory (secret_rotation_function/terraform). Requires:
 #   - Azure CLI (az) logged in
-#   - Azure Functions Core Tools (func) installed: https://docs.microsoft.com/azure/azure-functions/functions-run-local
 #   - Terraform already applied (terraform output available)
 set -e
 
@@ -21,24 +21,28 @@ fi
 
 RG_NAME="$(terraform output -raw resource_group_name)"
 FUNCTION_APP_NAME="$(terraform output -raw function_app_name)"
-STORAGE_ACCOUNT_NAME="$(terraform output -raw storage_account_name)"
 
-# func publish with remote build on Linux Consumption requires AzureWebJobsStorage to be a full connection string
-echo "Setting AzureWebJobsStorage for $FUNCTION_APP_NAME (required for remote build)..."
-STORAGE_KEY="$(az storage account keys list -g "$RG_NAME" -n "$STORAGE_ACCOUNT_NAME" --query '[0].value' -o tsv)"
-AZURE_WEB_JOBS_STORAGE="DefaultEndpointsProtocol=https;AccountName=${STORAGE_ACCOUNT_NAME};AccountKey=${STORAGE_KEY};EndpointSuffix=core.windows.net"
-az functionapp config appsettings set \
+# Create zip from source directory (exclude terraform dir and other non-function files)
+ZIP_FILE="$TERRAFORM_DIR/function_app.zip"
+echo "Creating zip package from $SOURCE_DIR ..."
+(cd "$SOURCE_DIR" && zip -r "$ZIP_FILE" . \
+  -x "terraform/*" \
+  -x ".funcignore" \
+  -x "__pycache__/*" \
+  -x ".python_packages/*" \
+  -x ".venv/*" \
+  -x "*.pyc" \
+)
+
+echo "Deploying to Function App: $FUNCTION_APP_NAME (resource group: $RG_NAME) ..."
+az functionapp deployment source config-zip \
   --resource-group "$RG_NAME" \
   --name "$FUNCTION_APP_NAME" \
-  --settings "AzureWebJobsStorage=$AZURE_WEB_JOBS_STORAGE" \
-  --output none
+  --src "$ZIP_FILE" \
+  --build-remote true \
+  --timeout 600
 
-if ! command -v func &>/dev/null; then
-  echo "Error: Azure Functions Core Tools (func) not found. Install from: https://docs.microsoft.com/azure/azure-functions/functions-run-local" >&2
-  exit 1
-fi
-
-echo "Publishing to Function App: $FUNCTION_APP_NAME (resource group: $RG_NAME) ..."
-(cd "$SOURCE_DIR" && FUNCTIONS_WORKER_RUNTIME=python func azure functionapp publish "$FUNCTION_APP_NAME" --resource-group "$RG_NAME" --build local --debug)
+echo "Cleaning up zip ..."
+rm -f "$ZIP_FILE"
 
 echo "Done."

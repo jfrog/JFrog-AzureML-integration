@@ -361,12 +361,14 @@ Clone config/config.example.yaml into config/config.yaml and update the missing 
 Submit the training pipeline to AzureML:
 
 ```bash
+    cd <project directory>
     python pipeline/training_pipeline.py
 ```
 Once the training pipeline completes you will get a URL for the Azure ML job it created, use that to open the training job and follow its progress.
 
 Deployment (with specific version):
 ```bash
+cd <project directory>
 python pipeline/deployment_pipeline.py --model-name iris-classifier --model-version v20260118123456
 ```
 ## Troubleshooting

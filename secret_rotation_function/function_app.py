@@ -20,15 +20,7 @@ logger = logging.getLogger("jfrog-token-rotation")
 
 
 def _get_credential():
-    """
-    Get Azure credential.
-    Prefers user-assigned managed identity if AZURE_CLIENT_ID is set,
-    otherwise falls back to DefaultAzureCredential.
-    """
-    client_id = os.environ.get("AZURE_CLIENT_ID")
-    if client_id:
-        logger.info("Using user-assigned managed identity with client_id: %s", client_id)
-        return ManagedIdentityCredential(client_id=client_id)
+
     logger.info("Using DefaultAzureCredential")
     return DefaultAzureCredential()
 
@@ -53,7 +45,7 @@ def _get_azure_ad_token(audience: str) -> str:
 def _exchange_token_for_jfrog_access_token(
     artifactory_url: str,
     azure_ad_token: str,
-    provider_name: str
+    provider_name: str,
 ) -> dict:
     """
     Exchange an Azure AD token for a JFrog access token using OIDC token exchange.
@@ -71,11 +63,12 @@ def _exchange_token_for_jfrog_access_token(
     payload = {
         "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange",
         "subject_token_type": "urn:ietf:params:oauth:token-type:id_token",
-        "subject_token": azure_ad_token,
-        "provider_name": provider_name,
+        "subject_token": f"{azure_ad_token}",
+        "provider_name": f"{provider_name}",
+        "provider_type": "oidc-azure",
     }
-
-    response = requests.post(exchange_url, data=payload, timeout=30)
+    payload_json = json.dumps(payload)
+    response = requests.post(exchange_url, data=payload_json, timeout=30,headers={"Content-Type": "application/json"})
     response.raise_for_status()
 
     return response.json()
@@ -122,7 +115,7 @@ def rotate_token() -> None:
     audience = os.environ["AZURE_AD_TOKEN_AUDIENCE"]
     secret_ttl = os.environ["SECRET_TTL"]
 
-    token_secret_name = os.environ.get("ARTIFACTORY_TOKEN_SECRET_NAME", "artifactory-access-token")
+    token_secret_name = os.environ.get("ARTIFACTORY_TOKEN_SECRET_NAME", "artifactory-access-token-secret")
 
 
 
@@ -131,7 +124,7 @@ def rotate_token() -> None:
     # Step 1: Get Azure AD token for the Entra ID app registration
     logger.info("Acquiring Azure AD token for audience: %s", audience)
     azure_ad_token = _get_azure_ad_token(audience)
-    logger.info("✓ Azure AD token acquired")
+
 
     # Step 2: Exchange for JFrog access token
     logger.info("Exchanging token with JFrog at: %s", artifactory_url)
@@ -147,9 +140,10 @@ def rotate_token() -> None:
 
     # Step 3: Store new token in Key Vault
     secret_json = json.dumps({
-        "access_token": jfrog_access_token,
-        "username": jfrog_username,
+        "access_token": f"{jfrog_access_token}",
+        "username": f"{jfrog_username}",
     })
+    logger.info("✓ secret=%s", secret_json)
     _store_token_in_key_vault(
         vault_name=vault_name,
         secret_name=token_secret_name,
@@ -157,7 +151,6 @@ def rotate_token() -> None:
         expires_in=expires_in,
     )
 
-    logger.info("✓ Token rotation completed for secret: %s", token_secret_name)
 
 def _ttl_seconds_to_cron() -> str:
     ttl_seconds = int(os.environ.get("SECRET_TTL", "21600"))  # e.g. 6 hours

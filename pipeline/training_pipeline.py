@@ -96,7 +96,7 @@ def training_pipeline():
         "ARTIFACTORY_HOST": config['artifactory']['artifactory_host'],
         "ARTIFACTORY_ML_REPO": config['artifactory']['repositories']['ml'],
         "MODEL_NAME": config['model']['name'],
-        "AZURE_CLIENT_ID": config['azureml']['compute']['managed_identity_client_id'],
+        "AZURE_CLIENT_ID": config.get('azureml', {}).get('compute', {}).get('managed_identity_client_id'),
         "UPLOAD_TO_ARTIFACTORY": config['model']['upload_to_artifactory']
     }
 
@@ -149,13 +149,9 @@ def main():
     try:
         compute = ml_client.compute.get(config['azureml']['compute']['cluster_name'])
         print(f"Using existing compute cluster: {compute.name}")
-        # Check if compute has managed identity, if not we'll need to update it
-        if not hasattr(compute, 'identity') or compute.identity is None:
-            print("Warning: Compute cluster does not have managed identity configured.")
-            print("  You may need to enable it manually in Azure Portal or update the compute.")
     except Exception:
         print(f"Creating compute cluster: {config['azureml']['compute']['cluster_name']}")
-        # Create compute with system-assigned managed identity
+        # Create compute with user-assigned managed identity
         compute = AmlCompute(
             name=config['azureml']['compute']['cluster_name'],
             size=config['azureml']['compute']['vm_size'],

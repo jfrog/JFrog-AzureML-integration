@@ -21,8 +21,29 @@ artifactory_url          = "https://yourorg.jfrog.io"
 jfrog_oidc_provider_name = "YOUR_OIDC_PROVIDER_NAME"
 azure_ad_token_audience  = "api://YOUR_APP_REGISTRATION_CLIENT_ID"
 # artifactory_token_secret_name = "artifactory-access-token"
+# Set to have Terraform create the secret in Key Vault with that name; leave unset to create it manually
+# artifactory_token_initial_value = "YOUR_INITIAL_TOKEN_OR_PLACEHOLDER"
 # secret_ttl = "21600"  # seconds (6 hours)
 
 # Function App
 function_app_name = "artifactory-token-rotation"
 # function_python_version = "3.12"
+
+# VNet integration (optional): existing subnet with (1) delegation Microsoft.Web/serverFarms,
+# (2) service_endpoints = ["Microsoft.Storage", "Microsoft.KeyVault"], (3) same region as function app
+# function_app_integration_subnet_id = "/subscriptions/YOUR_SUB/resourceGroups/YOUR_RG/providers/Microsoft.Network/virtualNetworks/YOUR_VNET/subnets/YOUR_SUBNET"
+
+# CIDR ranges allowed to access Function App SCM for zip deployment (e.g. [\"1.2.3.4/32\"])
+# deployer_ip_addresses = ["1.2.3.4/32", "NAT_IP"]
+
+# Application Insights (optional; leave unset or empty to disable)
+# application_insights_connection_string = "InstrumentationKey=...;IngestionEndpoint=...;..."
+# application_insights_key               = "YOUR_INSTRUMENTATION_KEY"
+
+# Tags (optional)
+#tags = {
+#  project     = "jfrog-azureml-integration"
+#  managed_by  = "terraform"
+#  environment = "dev"
+#  application = "azureml"
+#}

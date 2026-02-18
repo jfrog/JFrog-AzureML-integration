@@ -24,7 +24,8 @@ variable "tags" {
   default = {
     project     = "jfrog-azureml-integration"
     managed_by  = "terraform"
-    environment = "production"
+    environment = "dev"
+  a pplication = "azureml"
   }
 }
 
@@ -89,6 +90,13 @@ variable "artifactory_token_secret_name" {
   default     = "artifactory-access-token"
 }
 
+variable "artifactory_token_initial_value" {
+  description = "Initial value for the Artifactory token secret in Key Vault. When set, Terraform creates the secret with this name. Leave empty to skip creation (create the secret manually or via another process)."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
 variable "secret_ttl" {
   description = "Secret TTL in seconds (e.g. 21600 for 6 hours). Used by the function for timer schedule."
   type        = string
@@ -113,4 +121,50 @@ variable "function_python_version" {
 variable "azure_web_jobs_storage" {
   description = "Storage connection string for the function app (AzureWebJobsStorage). For zip deploy with remote build on Linux Consumption this must be a full connection string including AccountKey; identity-only connection strings can cause 'Malformed SCM_RUN_FROM_PACKAGE' during deploy. Use USE_FUNC_PUBLISH=1 in deploy-function.sh to avoid requiring the key."
   type        = string
+}
+
+# ──────────────────────────────────────────────
+# VNet integration (existing subnet)
+# ──────────────────────────────────────────────
+
+variable "function_app_integration_subnet_id" {
+  description = "Resource ID of an existing subnet for regional VNet integration. Required: (1) Subnet delegated to Microsoft.Web/serverFarms, (2) Same region as the function app, (3) Service endpoints Microsoft.Storage and Microsoft.KeyVault so the function can reach storage and Key Vault via the VNet. Leave null to skip VNet integration."
+  type        = string
+  default     = null
+}
+
+variable "deployer_ip_addresses" {
+  description = "CIDR ranges allowed to access Function App SCM for zip deployment (e.g. [\"1.2.3.4/32\"])"
+  type        = list(string)
+  default     = []
+}
+
+variable "maximum_instance_count" {
+  description = "Maximum number of instances for the Flex Consumption function app"
+  type        = number
+  default     = 100
+}
+
+variable "instance_memory_in_mb" {
+  description = "Memory allocation per instance in MB for the Flex Consumption function app"
+  type        = number
+  default     = 2048
+}
+
+# ──────────────────────────────────────────────
+# Application Insights (optional)
+# ──────────────────────────────────────────────
+
+variable "application_insights_connection_string" {
+  description = "Application Insights connection string for the function app. Leave empty to disable Application Insights."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "application_insights_key" {
+  description = "Application Insights instrumentation key (legacy). Prefer application_insights_connection_string when set."
+  type        = string
+  default     = ""
+  sensitive   = true
 }

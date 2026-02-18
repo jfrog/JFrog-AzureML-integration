@@ -19,6 +19,7 @@ build/
 
 # Config
 config/config.yaml
+config/config.yaml.poc
 # Environment variables
 .env
 .env.local
@@ -68,22 +69,14 @@ downloaded_artifacts/*
 secret_rotation_function/terraform.old/
 secret_rotation_function/terraform.old/terraform.tfvars
 secret_rotation_function/terraform.old/terraform.tfstate
-secret_rotation_function/terraform.old/terraform.tfstate.backup 
-terraform/.terraform/
-secret_rotation_function/terraform/.terraform/
-terraform/.terraform.lock.hcl
-terraform/terraform.tfvars
-<<<<<<< HEAD
+secret_rotation_function/terraform.old/terraform.tfstate.backup
+**/terraform/.terraform/
+**/terraform/.terraform.lock.hcl
+**/terraform/terraform.tfvars
+**/terraform/terraform.tfstate
+**/terraform/terraform.tfstate.backup
 secret_rotation_function/terraform/function_deploy.zip
 secret_rotation_function/deploy.zip
-secret_rotation_function/terraform/terraform.tfvars
-secret_rotation_function/terraform/terraform.tfstate
-secret_rotation_function/terraform/terraform.tfstate.backup
-
-
-=======
-terraform/terraform.tfstate
->>>>>>> 8670714 (Update .gitignotr)
 
 # Azure
 __azurite_db_blob_extent__.json

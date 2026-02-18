@@ -88,7 +88,7 @@ def deployment_pipeline(
         "ARTIFACTORY_HOST": config['artifactory']['artifactory_host'],
         "ARTIFACTORY_ML_REPO": config['artifactory']['repositories']['ml'],
         "MODEL_NAME": model_name,  # Default from config, can be overridden by input
-        "AZURE_CLIENT_ID": config['azureml']['compute']['managed_identity_client_id'],
+        "AZURE_CLIENT_ID": config.get('azureml', {}).get('compute', {}).get('managed_identity_client_id'),
         "ARTIFACTORY_ACCESS_TOKEN_SECRET_NAME": config['key_vault']['secrets']['artifactory_access_token_secret_name']
     }
     
@@ -158,6 +158,7 @@ def main():
         print(f"Using existing compute cluster: {compute.name}")
     except Exception:
         print(f"Creating compute cluster: {config['azureml']['compute']['cluster_name']}")
+        # Create compute with user-assigned managed identity
         compute = AmlCompute(
             name=config['azureml']['compute']['cluster_name'],
             size=config['azureml']['compute']['vm_size'],

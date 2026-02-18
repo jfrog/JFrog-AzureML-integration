@@ -1,0 +1,30 @@
+# ──────────────────────────────────────────────────────
+# Example Terraform variable values (Azure ML workspace)
+# Copy to terraform.tfvars for local use and fill in your values.
+# terraform.tfvars is in .gitignore and should not be committed.
+# ──────────────────────────────────────────────────────
+
+subscription_id = "YOUR_AZURE_SUBSCRIPTION_ID"
+
+# resource_group_location   = "Sweden Central"
+# resource_group_name_prefix = "rg"
+environment = "dev"
+prefix      = "ml"
+
+
+# Compute cluster (optional; defaults shown)
+# compute_cluster_min_node_count = 0
+# compute_cluster_max_node_count = 1
+# compute_cluster_vm_priority    = "Dedicated"   # or "LowPriority"
+# compute_cluster_vm_size        = "Standard_DS3_v2"
+
+# Allowed IPs for Key Vault and Storage (required for network rules)
+ip_rules = ["1.2.3.4/32", "NAT_IP"]
+
+# Tags (optional)
+tags = {
+  project     = "jfrog-azureml-integration"
+  managed_by  = "terraform"
+  environment = "dev"
+  application = "azureml"
+}

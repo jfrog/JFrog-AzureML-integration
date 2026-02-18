@@ -25,24 +25,32 @@ resource "azurerm_storage_container" "function" {
 
 resource "azurerm_role_assignment" "function_storage_blob" {
   scope                = data.azurerm_storage_account.existing.id
-  role_definition_name = "Storage Blob Data Contributor"
-  principal_id         = azurerm_linux_function_app.function_app.identity[0].principal_id
+  role_definition_name = "Storage Blob Data Owner"
+  principal_id         = azurerm_function_app_flex_consumption.function_app.identity[0].principal_id
 
-  depends_on = [azurerm_linux_function_app.function_app]
+  depends_on = [azurerm_function_app_flex_consumption.function_app]
 }
 
 resource "azurerm_role_assignment" "function_storage_table" {
   scope                = data.azurerm_storage_account.existing.id
   role_definition_name = "Storage Table Data Contributor"
-  principal_id         = azurerm_linux_function_app.function_app.identity[0].principal_id
+  principal_id         = azurerm_function_app_flex_consumption.function_app.identity[0].principal_id
 
-  depends_on = [azurerm_linux_function_app.function_app]
+  depends_on = [azurerm_function_app_flex_consumption.function_app]
 }
 
 resource "azurerm_role_assignment" "function_storage_queue" {
   scope                = data.azurerm_storage_account.existing.id
   role_definition_name = "Storage Queue Data Contributor"
-  principal_id         = azurerm_linux_function_app.function_app.identity[0].principal_id
+  principal_id         = azurerm_function_app_flex_consumption.function_app.identity[0].principal_id
 
-  depends_on = [azurerm_linux_function_app.function_app]
+  depends_on = [azurerm_function_app_flex_consumption.function_app]
+}
+
+resource "azurerm_role_assignment" "function_storage_account_contributor" {
+  scope                = data.azurerm_storage_account.existing.id
+  role_definition_name = "Storage Account Contributor"
+  principal_id         = azurerm_function_app_flex_consumption.function_app.identity[0].principal_id
+
+  depends_on = [azurerm_function_app_flex_consumption.function_app]
 }
