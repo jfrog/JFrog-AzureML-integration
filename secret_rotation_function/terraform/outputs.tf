@@ -46,3 +46,13 @@ output "key_vault_uri" {
   description = "URI of the existing Key Vault"
   value       = data.azurerm_key_vault.existing.vault_uri
 }
+
+output "vnet_id" {
+  description = "Resource ID of the existing customer VNet"
+  value       = data.azurerm_virtual_network.existing.id
+}
+
+output "function_integration_subnet_id" {
+  description = "Resource ID of the Function App integration subnet"
+  value       = azurerm_subnet.function_integration.id
+}

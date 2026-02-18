@@ -45,4 +45,12 @@ az functionapp deployment source config-zip \
 echo "Cleaning up zip ..."
 rm -f "$ZIP_FILE"
 
+# Flex Consumption zip deploy can disrupt platform-level CORS config.
+# Force the gateway to re-read CORS settings by re-adding the allowed origin.
+echo "Re-applying CORS settings ..."
+az functionapp cors add \
+  --resource-group "$RG_NAME" \
+  --name "$FUNCTION_APP_NAME" \
+  --allowed-origins "https://portal.azure.com" 2>/dev/null || true
+
 echo "Done."

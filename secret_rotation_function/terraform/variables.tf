@@ -122,3 +122,41 @@ variable "instance_memory_in_mb" {
   default     = 2048
 }
 
+# ──────────────────────────────────────────────
+# Networking (existing customer VNet)
+# ──────────────────────────────────────────────
+
+variable "existing_vnet_name" {
+  description = "Name of the existing customer VNet (from Azure ML workspace)"
+  type        = string
+}
+
+variable "existing_vnet_resource_group_name" {
+  description = "Resource group of the existing VNet. When null, uses resource_group_name."
+  type        = string
+  default     = null
+}
+
+variable "function_subnet_name" {
+  description = "Name of the subnet to create for Function App VNet integration"
+  type        = string
+  default     = "snet-function-integration"
+}
+
+variable "function_subnet_address_prefixes" {
+  description = "Address prefixes for the Function App integration subnet"
+  type        = list(string)
+}
+
+variable "deployer_ip_addresses" {
+  description = "CIDR ranges allowed to access Function App SCM for zip deployment (e.g. [\"1.2.3.4/32\"])"
+  type        = list(string)
+  default     = []
+}
+
+variable "create_private_dns_zones" {
+  description = "Whether to create private DNS zones for storage/Key Vault and link them to the VNet. Set to false if the customer's Azure ML workspace already has them."
+  type        = bool
+  default     = true
+}
+
