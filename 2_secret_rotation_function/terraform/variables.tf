@@ -118,10 +118,6 @@ variable "function_python_version" {
   default     = "3.13"
 }
 
-variable "azure_web_jobs_storage" {
-  description = "Storage connection string for the function app (AzureWebJobsStorage). For zip deploy with remote build on Linux Consumption this must be a full connection string including AccountKey; identity-only connection strings can cause 'Malformed SCM_RUN_FROM_PACKAGE' during deploy. Use USE_FUNC_PUBLISH=1 in deploy-function.sh to avoid requiring the key."
-  type        = string
-}
 
 # ──────────────────────────────────────────────
 # VNet integration (existing subnet)

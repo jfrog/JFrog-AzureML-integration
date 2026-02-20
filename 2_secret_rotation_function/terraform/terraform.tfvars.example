@@ -31,7 +31,7 @@ function_app_name = "artifactory-token-rotation"
 
 # VNet integration (optional): existing subnet with (1) delegation Microsoft.Web/serverFarms,
 # (2) service_endpoints = ["Microsoft.Storage", "Microsoft.KeyVault"], (3) same region as function app
-# function_app_integration_subnet_id = "/subscriptions/YOUR_SUB/resourceGroups/YOUR_RG/providers/Microsoft.Network/virtualNetworks/YOUR_VNET/subnets/YOUR_SUBNET"
+function_app_integration_subnet_id = "/subscriptions/YOUR_SUB/resourceGroups/YOUR_RG/providers/Microsoft.Network/virtualNetworks/YOUR_VNET/subnets/YOUR_SUBNET"
 
 # CIDR ranges allowed to access Function App SCM for zip deployment (e.g. [\"1.2.3.4/32\"])
 # deployer_ip_addresses = ["1.2.3.4/32", "NAT_IP"]

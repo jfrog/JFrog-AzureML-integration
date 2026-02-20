@@ -7,9 +7,10 @@ This Terraform deploys the Azure Function **infrastructure** (app, plan, RBAC). 
 - **Existing** Azure ML workspace Key Vault (data source only)
 - Function app identity is granted **Storage Blob Data Contributor**, **Storage Table Data Contributor**, and **Storage Queue Data Contributor** on the existing storage account, and **Key Vault Secrets Officer** on the existing Key Vault
 
-## Prerequisites
+## Prerequisites (R&R: Azure Administrator)
 
 - Azure subscription and CLI logged in (`az login`)
+- In the Azure Key Vault IAM add **Key Vault Administrator** Role to enable one time secret creation to the relevant users or Identities.
 - Either:
   - **Option A:** Existing resource group, storage account, and Key Vault (from your Azure ML workspace), or
   - **Option B:** The [1_azure_machine_learning_workspace](../1_azure_machine_learning_workspace) Terraform already applied, so you can pass its outputs into this module
@@ -18,36 +19,43 @@ This Terraform deploys the Azure Function **infrastructure** (app, plan, RBAC). 
 ## Usage
 
 1. Copy the example variables and set your values:
-   ```bash
-   cp terraform.tfvars.example terraform.tfvars
-   # Edit terraform.tfvars with your subscription ID, Artifactory URL, OIDC provider, function_app_name, etc.
-   # If using Option B below, you can omit resource_group_name, key_vault_name, and existing_storage_account_name in tfvars (they will be passed via -var).
-   ```
+
+``` bash
+cp terraform.tfvars.example terraform.tfvars
+```
+
+### Edit terraform.tfvars with your: 
+* subscription ID (`subscription_id`)
+* Azure Resource Group name (`resource_group_name`)
+* Artifactory URL (`artifactory_url`)
+* OIDC provider name (`jfrog_oidc_provider_name`)
+* Azure Application registry client id (`azure_ad_token_audience`)
+* Workspace Key Vault name (`key_vault_name`)
+* Workespace Storage Account (`existing_storage_account_name`)
+* VNET subnet id (`function_app_integration_subnet_id`)
+* Deployment Machine IP/s (`deployer_ip_addresses`)
+* (Optional) Azure Function app name (`function_app_name`)
+* (Optional) Azure Function app storage account container's name (`function_storage_container_name`)
+
+
+> **Important:** Verify to add the IP/s of the deployment machine to `deployer_ip_addresses` in tfvars to enable successfull function code deployment.
 
 2. Initialize and apply (creates/updates the function app and RBAC only).
 
-   **Option A — Manual values in tfvars:** Run from this directory (`2_secret_rotation_function/terraform`):
-   ```bash
-   terraform init
-   terraform plan
-   terraform apply
-   ```
 
-   **Option B — Pass values from the Azure ML workspace (1_azure_machine_learning_workspace):** From the **repository root**:
    ```bash
    cd 2_secret_rotation_function/terraform
    terraform init
    terraform plan
-   terraform apply \
-     -var="resource_group_name=$(cd ../../1_azure_machine_learning_workspace/terraform && terraform output -raw resource_group_name)" \
-     -var="key_vault_name=$(cd ../../1_azure_machine_learning_workspace/terraform && terraform output -raw key_vault_name)" \
-     -var="existing_storage_account_name=$(cd ../../1_azure_machine_learning_workspace/terraform && terraform output -raw storage_account_name)"
+   terraform apply
    ```
-   Ensure `1_azure_machine_learning_workspace/terraform` has been applied at least once so the outputs exist. All other variables (subscription_id, artifactory_url, jfrog_oidc_provider_name, etc.) must still be set in `terraform.tfvars` or via additional `-var` flags.
+ 
+ > **Important:** Save these value for later use:
+> - `function_app_identity_principal_id` 
 
 3. **Post-install: Deploy function code** — after a successful apply, either run the script (recommended) or publish manually:
 
-   **Option A — Script (sets storage key temporarily, publishes, then removes key):** From the repo root or from `2_secret_rotation_function/terraform`:
+   **Option A (Preferred) — Script (sets storage key temporarily, publishes, then removes key):** From the repo root or from `2_secret_rotation_function/terraform`:
    ```bash
    cd 2_secret_rotation_function/terraform
    ./deploy-function.sh

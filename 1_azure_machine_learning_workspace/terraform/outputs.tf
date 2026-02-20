@@ -15,6 +15,11 @@ output "subnet_name_1" {
   value       = azurerm_subnet.my_terraform_subnet_1.name
 }
 
+output "subnet_id_1" {
+  description = "Resource ID of subnet 1 (for VNet integration)."
+  value       = azurerm_subnet.my_terraform_subnet_1.id
+}
+
 output "subnet_name_2" {
   description = "The name of the created subnet 2."
   value       = azurerm_subnet.my_terraform_subnet_2.name

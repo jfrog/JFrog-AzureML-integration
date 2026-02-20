@@ -294,18 +294,68 @@ sequenceDiagram
 ## Quick Start
 
 ### Intiliaze Setup Environment (R&R: Azure Administrator)
+
+
 ### Prerequisites
-* AzureML Workspace (R&R: Azure Administrator)
-* In the Azure Machine Learning workspace Resource add Contributor (TODO add the least privlages to enable working with ws) role to the relevant users or Identities.
-### Set Up
-* Create Manage Identity and assign it with "Key Vault Secrets User" role for the Workaspace's Key-Vault:
-    1. In Azure Managed Identity, create a new managed identity and name it. make sure to choose the AzureML workspace Resource Group and Region
-    2. Return to the Azure ML Workspace and inside the overview page drill down to its key vault
-    3. inside the Azure ML workspace key vault, open the Access control (IAM)
-    4. Add role assignment to role "Key Vault Secrets User" for the managed identity you created above    
-    5. Still inside the Workspace Keyvault entity Open > settings > Access Configuration settings and Make sure 'Azure role-based access control (recommended)' is selected
-    6. create keyvault secret containing the JFrog access token and username
-    `` az keyvault secret set --vault-name ctoaazuremlpoc5615636730 --name artifactory-access-token-secret --value '{"access_token":"<ACCESS TOKEN>","username":"<USERNAME>"}' ``
+
+Before you begin, ensure you have the following:
+
+- **Azure CLI** installed and authenticated (`az login`) 
+- **Access to JFrog Artifactory** with admin permissions
+
+
+### Create Azure AD Application
+
+```bash
+# Set variables
+APP_DISPLAY_NAME="jfrog-credentials-provider-azureml"
+TENANT_ID=$(az account show --query tenantId -o tsv)
+
+# Create the application
+APP_CLIENT_ID=$(az ad app create \
+  --display-name "$APP_DISPLAY_NAME" \
+  --query appId -o tsv)
+
+echo "Application Client ID: $APP_CLIENT_ID"
+echo "Tenant ID: $TENANT_ID"
+```
+
+> **Important:** Save these values for later use:
+> - `APP_CLIENT_ID` (also called `azure_app_client_id`)
+> - `TENANT_ID` (also called `azure_tenant_id`)
+
+### Create Service Principal
+
+```bash
+# Create Service Principal for the application
+az ad sp create --id "$APP_CLIENT_ID"
+```
+
+
+### Configure Access Token Version
+
+The credential provider uses `https://login.microsoftonline.com` as the issuer URL (instead of the older `https://sts.windows.net/`). Azure requires you to set `requestedAccessTokenVersion` to `2` for this to work.
+
+```bash
+# Get the object ID of the app created above
+OBJECT_ID=$(az ad app show --id "$APP_CLIENT_ID" --query "id" -o tsv)
+
+# Update the access token version
+az rest --method PATCH \
+  --headers "Content-Type=application/json" \
+  --uri "https://graph.microsoft.com/v1.0/applications/$OBJECT_ID" \
+  --body '{"api":{"requestedAccessTokenVersion": 2}}'
+```
+
+**Alternative: Configure via Azure Portal**
+
+1. Navigate to **Azure Portal** → **Azure Active Directory** → **App registrations**
+2. Search for your application by name or client ID
+3. Go to **Manifest**
+4. Set `"requestedAccessTokenVersion": 2` in the JSON
+5. Click **Save**
+
+---
 
 ### JFrog Setup (R&R: JFrog Administrator or Project Admin)
 ### Prerequisites
@@ -313,6 +363,171 @@ sequenceDiagram
 * JFrog Docker Virtual, Local and Remote repositories
 * JFrog Machine Learning Repository
 
+### JFrog Artifactory OIDC Configuration
+
+Configure JFrog Artifactory to accept OIDC tokens from Azure. This involves creating an OIDC provider and an identity mapping in Artifactory.
+
+For more information, see the [JFrog Artifactory OIDC Documentation](https://www.jfrog.com/confluence/display/JFROG/Access+Tokens#AccessTokens-OIDCIntegration).
+
+####  Get Artifactory Admin Token
+
+You'll need an Artifactory admin access token to configure OIDC. If you don't have one, create it in Artifactory under **Administration** → **Identity and Access** → **Access Tokens**.
+
+```bash
+# Set your Artifactory details
+ARTIFACTORY_URL="your-instance.jfrog.io"
+ARTIFACTORY_ADMIN_TOKEN="your-admin-access-token"
+ARTIFACTORY_USER="azure-aks-user"  # User that will be mapped to OIDC tokens
+OIDC_PROVIDER_NAME="azure-aks-oidc-provider"  # Choose a name
+```
+
+
+
+### Create OIDC Provider in Artifactory
+
+```bash
+curl -X POST "https://$ARTIFACTORY_URL/access/api/v1/oidc" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ARTIFACTORY_ADMIN_TOKEN" \
+  -d "{
+    \"name\": \"$OIDC_PROVIDER_NAME\",
+    \"issuer_url\": \"https://login.microsoftonline.com/$TENANT_ID/v2.0\",
+    \"description\": \"OIDC provider for Azure ML\",
+    \"provider_type\": \"Azure\",
+    \"token_issuer\": \"https://login.microsoftonline.com/$TENANT_ID/v2.0\",
+    \"audience\": \"$APP_CLIENT_ID\",
+    \"use_default_proxy\": false
+  }"
+```
+
+For more details, see the [JFrog REST API documentation for creating OIDC configuration](https://jfrog.com/help/r/jfrog-rest-apis/create-oidc-configuration).
+
+---
+
+
+### Setup AzureML Workspace and Azure Function for Token rotation
+
+### Option 1 - Manual
+
+### Prerequisites
+* AzureML Workspace (R&R: Azure Administrator)
+* In the Azure Machine Learning workspace IAM add **Contributor** Role to the relevant users or Identities.
+* In the Azure Key Vault IAM add **Key Vault Administrator** Role to enable one time secret creation to the relevant users or Identities.
+
+### Set Up
+* create keyvault secret containing the JFrog access token and username
+
+   ``` az keyvault secret set --vault-name <key vault name> --name artifactory-access-token-secret --value '{"access_token":"<ACCESS TOKEN>","username":"<USERNAME>"}' ```
+
+* TODO: 
+> **Important:** Save these values for later use:
+> - `Function App Enterprise Application Object ID`  (also call `function_app_identity_principal_id`)
+
+### Deploy function code
+
+```bash
+cd 2_secret_rotation_function/terraform
+./deploy-function.sh
+```
+---
+
+---
+
+### Option 2 - Automation
+
+
+### Prerequisites
+* See 1_azure_machine_learning_workspace/README.md ## Prerequisites
+* See 2_secret_rotation_function/terraform/README.md ## Prerequisites
+
+
+### Set Up
+
+#### Create AzureML Workspace, Stoareg Account and Azure Key Vault
+
+* See 1_azure_machine_learning_workspace/README.md ## Usage
+
+#### Create Azure Function App for Token rotation
+
+* See 2_secret_rotation_function/terraform/README.md ## Usage
+
+> **Important:** Save these values for later use:
+> - `function_app_identity_principal_id` 
+
+---
+###TODO: Add to the user How to verify the the Function is working correctly
+---
+
+### Create Identity Mapping for OIDC Provider in Artifactory
+
+The identity mapping tells Artifactory how to map Azure OIDC tokens to Artifactory users.
+
+> **⚠️ Important:** The default is **6 hours ( 21600 seconds)**. The example below uses 21600 seconds to verify the  token is revocable. 
+
+For more details, see the [JFrog Revocable Expiry Threshold](https://jfrog.com/help/r/jfrog-platform-administration-documentation/use-the-revocable-and-persistency-thresholds).
+
+```bash
+# Set your Artifactory details
+ARTIFACTORY_URL="your-instance.jfrog.io"
+ARTIFACTORY_ADMIN_TOKEN="your-admin-access-token"
+ARTIFACTORY_USER="azure-aks-user"  # User that will be mapped to OIDC tokens
+OIDC_PROVIDER_NAME="azure-aks-oidc-provider"  # Choose a name
+TENANT_ID="<tenant id from Create Azure AD Application step>" #Azure Tenant id
+APP_CLIENT_ID="<client id from Create Azure AD Application step>" #Azure AD app client id
+FUNCTION_APP_SUBJECT_ID="function_app_identity_principal_id" #Azure Function App subject id
+
+```
+
+```bash
+curl -X POST "https://$ARTIFACTORY_URL/access/api/v1/oidc/$OIDC_PROVIDER_NAME/identity_mappings" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ARTIFACTORY_ADMIN_TOKEN" \
+  -d "{
+    \"name\": \"$OIDC_PROVIDER_NAME\",
+    \"description\": \"Azure OIDC identity mapping\",
+    \"claims\": {
+      \"aud\": \"$APP_CLIENT_ID\",
+      \"sub\": \"$FUNCTION_APP_SUBJECT_ID\",
+      \"iss\": \"https://login.microsoftonline.com/$TENANT_ID/v2.0\"
+    },
+    \"token_spec\": {
+      \"username\": \"$ARTIFACTORY_USER\",
+      \"scope\": \"applied-permissions/user\",
+      \"audience\": \"*@*\",
+      \"expires_in\": 21600
+    },
+    \"priority\": 1
+  }"
+```
+
+<details>
+<summary><strong>📝 Configuration Notes</strong></summary>
+
+- The `claims.aud` must match your `azure_app_client_id`
+- The `claims.iss` must match the Azure AD issuer URL: `https://login.microsoftonline.com/$TENANT_ID/v2.0`
+- The `calims.sub` must match the Function App Enterprise Application Object ID 
+- The `token_spec.username` must be an existing Artifactory user
+- Ensure the user has permissions to pull images from your repositories
+
+</details>
+
+For more information, see the [JFrog Platform Administration documentation on identity mappings](https://jfrog.com/help/r/jfrog-platform-administration-documentation/identity-mappings).
+
+### ✅ Verify OIDC Provider
+
+```bash
+# List OIDC providers
+curl -X GET "https://$ARTIFACTORY_URL/access/api/v1/oidc" \
+  -H "Authorization: Bearer $ARTIFACTORY_ADMIN_TOKEN" | jq
+
+# Get specific provider details
+curl -X GET "https://$ARTIFACTORY_URL/access/api/v1/oidc/$OIDC_PROVIDER_NAME" \
+  -H "Authorization: Bearer $ARTIFACTORY_ADMIN_TOKEN" | jq
+```
+
+
+
+---
 ### Configure training (R&R: ML Engineer)
 ### Prerequisites
 * Python >= 3.11
