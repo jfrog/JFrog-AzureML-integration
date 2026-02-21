@@ -10,10 +10,8 @@ This Terraform deploys the Azure Function **infrastructure** (app, plan, RBAC). 
 ## Prerequisites (R&R: Azure Administrator)
 
 - Azure subscription and CLI logged in (`az login`)
-- In the Azure Key Vault IAM add **Key Vault Administrator** Role to enable one time secret creation to the relevant users or Identities.
-- Either:
-  - **Option A:** Existing resource group, storage account, and Key Vault (from your Azure ML workspace), or
-  - **Option B:** The [1_azure_machine_learning_workspace](../1_azure_machine_learning_workspace) Terraform already applied, so you can pass its outputs into this module
+- In the Azure Key Vault IAM add **Key Vault Administrator** Role to enable one time secret creation to the relevant users or Identities that deploy the Azure Function App.
+- Existing resource group, storage account, and Key Vault (from your Azure ML workspace)
 - Terraform >= 1.5.0
 
 ## Usage
@@ -51,9 +49,15 @@ cp terraform.tfvars.example terraform.tfvars
    ```
  
  > **Important:** Save these value for later use:
-> - `function_app_identity_principal_id` 
+> - `function_app_identity_principal_id` — you will need it 
+when you **Create Identity Mapping for OIDC Provider in Artifactory** at the next step
 
-3. **Post-install: Deploy function code** — after a successful apply, either run the script (recommended) or publish manually:
+3. **Create Identity Mapping for OIDC Provider in Artifactory**:
+
+* Follow the instractiones in the link below:
+[Link to Create Identity Mapping for OIDC Provider in Artifactory](../../README.md#create-identity-mapping-for-oidc-provider-in-artifactory).
+
+4. **Post-install: Deploy function code** — after a successful apply, either run the script (recommended) or publish manually:
 
    **Option A (Preferred) — Script (sets storage key temporarily, publishes, then removes key):** From the repo root or from `2_secret_rotation_function/terraform`:
    ```bash
@@ -98,3 +102,15 @@ To **replace** the existing app (same name, fresh resource), you would remove th
 - **"Malformed SCM_RUN_FROM_PACKAGE when uploading built content"** — Zip deploy with remote build on Linux Consumption requires the deployment system to upload the built package to blob storage. That only works when `AzureWebJobsStorage` is a **full connection string including AccountKey**. If you use an identity-only value (e.g. for `storage_uses_managed_identity`), either:
   1. Use **Functions Core Tools** so you don’t need the key: `USE_FUNC_PUBLISH=1 ./deploy-function.sh`, or  
   2. Set `AzureWebJobsStorage` (e.g. in Portal or via `terraform.tfvars` / app settings) to a full connection string: `DefaultEndpointsProtocol=https;AccountName=<name>;AccountKey=<key>;EndpointSuffix=core.windows.net`. Get the key with: `az storage account keys list -g <resource_group> -n <storage_account> --query [0].value -o tsv`.
+
+## Cleanup
+
+To remove the function app, its plan, the blob container created for the function, and the RBAC assignments (the existing Key Vault and storage account are not deleted):
+
+```bash
+cd 2_secret_rotation_function/terraform
+terraform plan -destroy
+terraform destroy
+```
+
+Run this **before** destroying the workspace. Then remove the Azure ML workspace and its resources: see [1_azure_machine_learning_workspace — Cleanup](../1_azure_machine_learning_workspace/README.md#cleanup).

@@ -7,6 +7,7 @@ resource "azurerm_machine_learning_compute_cluster" "compute" {
   vm_priority                   = var.compute_cluster_vm_priority
   vm_size                       = var.compute_cluster_vm_size
 
+
   identity {
     type = "SystemAssigned"
   }
@@ -17,6 +18,8 @@ resource "azurerm_machine_learning_compute_cluster" "compute" {
     scale_down_nodes_after_idle_duration = "PT2M" # 2 minutes
   }
   tags = var.tags
+
+  depends_on = [azurerm_machine_learning_workspace.default, azurerm_private_endpoint.workspace]
 }
 
 # ──────────────────────────────────────────────

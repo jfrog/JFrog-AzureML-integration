@@ -48,7 +48,7 @@ graph TB
     Docker -->|4. Build & push image| ArtifactoryDocker2
 
     %% Train Phase Flow
-    TrainDev -->|1. Execure Train Pipeline| PipelineScript
+    TrainDev -->|1. Execute Train Pipeline| PipelineScript
     PipelineScript -->|2. Get JFrog Credentials| KV
     PipelineScript -->|3. Submit Training Job| AML
 
@@ -164,7 +164,7 @@ graph TB
         - Pulls the trained model image from Artifactory Docker registry (using the previously retrieved credentials)
    - The trained model container:
         -  Retrieves JFrog short lived credentials from AzureML Workspace Key Vault
-        -  Downlaods the model
+        -  Downloads the model
         -  Runs the model
         -  Performs inference test calls (``model.predict(...)``)
 
@@ -181,7 +181,7 @@ graph TB
 
 #### Advanced Authentication: JFrog token auto-rotation
 For more advanced security setup, a JFrog short lived Access Token can be added and rotated automatically through an Azure function based on OIDC token exchange protocol.
-For this setup, see the optional terraform and function script on this repository under secret_rotation_function folder.
+For this setup, see the optional Terraform and function under [2_secret_rotation_function](2_secret_rotation_function).
 
 
 ### Key Integration Points
@@ -238,7 +238,7 @@ sequenceDiagram
     Container->>AML: Return pipeline outputs
     AML-->>Dev: Pipeline completed
 ```
-#### Deployment and Infenrece
+#### Deployment and Inference
 The following sequence diagram shows the temporal flow of deployment operations:
 
 ```mermaid
@@ -270,7 +270,7 @@ sequenceDiagram
     AML-->>Dev: Job completed
 ```
 
-### Architectual decisions explained
+### Architectural decisions explained
 
 #### Docker Build Process
 - **Multi-stage build** This example uses a multi staged docker build for optimized image size.
@@ -293,7 +293,7 @@ sequenceDiagram
 
 ## Quick Start
 
-### Intiliaze Setup Environment (R&R: Azure Administrator)
+### Initialize Setup Environment (R&R: Azure Administrator)
 
 
 ### Prerequisites
@@ -419,7 +419,8 @@ For more details, see the [JFrog REST API documentation for creating OIDC config
 
    ``` az keyvault secret set --vault-name <key vault name> --name artifactory-access-token-secret --value '{"access_token":"<ACCESS TOKEN>","username":"<USERNAME>"}' ```
 
-* TODO: 
+** TODO: Add the manual instractiones to create Azyre Function App
+
 > **Important:** Save these values for later use:
 > - `Function App Enterprise Application Object ID`  (also call `function_app_identity_principal_id`)
 
@@ -429,33 +430,32 @@ For more details, see the [JFrog REST API documentation for creating OIDC config
 cd 2_secret_rotation_function/terraform
 ./deploy-function.sh
 ```
----
+
+The script deploys the function and then **invokes it once** so the Key Vault secret is updated immediately with a real Artifactory access token (otherwise the token would only be refreshed on the next timer run).
 
 ---
 
 ### Option 2 - Automation
 
 
-### Prerequisites
-* See 1_azure_machine_learning_workspace/README.md ## Prerequisites
-* See 2_secret_rotation_function/terraform/README.md ## Prerequisites
-
-
 ### Set Up
 
-#### Create AzureML Workspace, Stoareg Account and Azure Key Vault
+#### Create AzureML Workspace, Storage Account and Azure Key Vault
 
-* See 1_azure_machine_learning_workspace/README.md ## Usage
+### Prerequisites
+* See [1_azure_machine_learning_workspace/README.md — Prerequisites](1_azure_machine_learning_workspace/README.md#prerequisites)
+
+### Deploy
+* See [1_azure_machine_learning_workspace/README.md — Usage](1_azure_machine_learning_workspace/README.md#usage). This creates the workspace, VNet, subnets, Key Vault, storage, compute, and a **private endpoint** for the workspace in subnet 2.
 
 #### Create Azure Function App for Token rotation
 
-* See 2_secret_rotation_function/terraform/README.md ## Usage
+### Prerequisites
+* See [2_secret_rotation_function/terraform/README.md — Prerequisites](2_secret_rotation_function/terraform/README.md#prerequisites)
 
-> **Important:** Save these values for later use:
-> - `function_app_identity_principal_id` 
+### Deploy
+* See [2_secret_rotation_function/terraform/README.md — Usage](2_secret_rotation_function/terraform/README.md#usage).
 
----
-###TODO: Add to the user How to verify the the Function is working correctly
 ---
 
 ### Create Identity Mapping for OIDC Provider in Artifactory
@@ -505,7 +505,7 @@ curl -X POST "https://$ARTIFACTORY_URL/access/api/v1/oidc/$OIDC_PROVIDER_NAME/id
 
 - The `claims.aud` must match your `azure_app_client_id`
 - The `claims.iss` must match the Azure AD issuer URL: `https://login.microsoftonline.com/$TENANT_ID/v2.0`
-- The `calims.sub` must match the Function App Enterprise Application Object ID 
+- The `claims.sub` must match the Function App Enterprise Application Object ID (use `function_app_identity_principal_id` from Terraform output) 
 - The `token_spec.username` must be an existing Artifactory user
 - Ensure the user has permissions to pull images from your repositories
 
@@ -599,6 +599,10 @@ python pipeline/deployment_pipeline.py --model-name iris-classifier --model-vers
 - Verify Azure credentials are correctly set
 - Check that the Docker image was successfully pushed to Artifactory
 - Ensure Azure Key Vault has the required secrets
+
+## Cleanup
+
+To tear down the automation, destroy in this order: first [2_secret_rotation_function/terraform/README.md — Cleanup](2_secret_rotation_function/terraform/README.md#cleanup) (function app), then [1_azure_machine_learning_workspace/README.md — Cleanup](1_azure_machine_learning_workspace/README.md#cleanup) (workspace, VNet, Key Vault, storage).
 
 ## License
 
