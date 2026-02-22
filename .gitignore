@@ -18,6 +18,7 @@ dist/
 build/
 
 # Config
+.cursor/
 config/config.yaml
 config/config.yaml.poc
 # Environment variables
