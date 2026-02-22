@@ -1,4 +1,4 @@
-# AzureML + JFrog Artifactory Integration (WIP)
+# AzureML + JFrog Artifactory Integration
 
 This project demonstrates how to build and run Azure Machine Learning (AzureML) jobs while sourcing packages, images, and model artifacts from/to JFrog Artifactory.
 It focuses on secure credential handling, repeatable builds, and predictable promotion of trained models.
@@ -181,7 +181,8 @@ graph TB
 
 #### Advanced Authentication: JFrog token auto-rotation
 For more advanced security setup, a JFrog short lived Access Token can be added and rotated automatically through an Azure function based on OIDC token exchange protocol.
-For this setup, see the optional Terraform and function under [2_secret_rotation_function](2_secret_rotation_function).
+For this setup, see the optional Terraform and function under 
+[Advanced Setup (with automatic secret rotation)](#advanced-setup-with-automatic-secret-rotation).
 
 
 ### Key Integration Points
@@ -291,7 +292,97 @@ sequenceDiagram
 - **Used Credentials:** JFrog access token stored on Azure Key Vault, with an optional enhanced setup allowing for auto-rotated access tokens managed by Azure function. with token rotation based on OIDC and Azure App. registration & Managed Identity (see advanced setup under secret_rotation_function sub folder)
 
 
-## Quick Start
+### Intiliaze Setup Environment (R&R: Azure Administrator)
+### Prerequisites
+* AzureML Workspace (R&R: Azure Administrator)
+* In the Azure Machine Learning workspace Resource add Contributor role to the relevant users or Identities.
+* Artifactory Access Token and Username
+### Set Up
+TODO: Verify with @avivka that we can keep using system-assigned identity and remove the manged option and the roles setup.
+* Create Manage Identity and assign it with "Key Vault Secrets User" role for the Workaspace's Key-Vault:
+    1. In Azure Managed Identity, create a new managed identity and name it. make sure to choose the AzureML workspace Resource Group and Region
+    2. Return to the Azure ML Workspace and inside the overview page drill down to its key vault
+    3. inside the Azure ML workspace key vault, open the Access control (IAM)
+    4. Add role assignment to role "Key Vault Secrets User" for the managed identity you created above    
+    5. Still inside the Workspace Keyvault entity Open > settings > Access Configuration settings and Make sure 'Azure role-based access control (recommended)' is selected
+* Create keyvault secret containing the JFrog access token and username
+
+   ``` az keyvault secret set --vault-name <key vault name> --name artifactory-access-token-secret --value '{"access_token":"<ACCESS TOKEN>","username":"<USERNAME>"}' ```
+### JFrog Setup (R&R: JFrog Administrator or Project Admin)
+### Prerequisites
+* JFrog Pypi remote repository
+* JFrog Docker Virtual, Local and Remote repositories
+* JFrog Machine Learning Repository
+
+### Configure training (R&R: ML Engineer)
+### Prerequisites
+* Python >= 3.11
+* Create pip.conf pointing to you JFrog platform. (See pip.example.conf for referance)
+* Azure CLI configured
+* Login to Azure account. e.g.`az login --tenant <Tenant id>`, or any other preferd method.
+* Ensure Docker BuildKit is enabled for secret support: `export DOCKER_BUILDKIT=1`
+
+### 1. Set Up Python virtual environment
+```bash
+cd <project directory>
+export PIP_CONFIG_FILE=<pip.conf file you want to use>
+source setup_venv.sh
+```
+
+
+### 2. Build, Tag and Push Docker Image
+This step builts the training image, you can use the example as-is or replace its training logic on `src/train.py` script.
+
+Build the Docker image with the specified tag. The build uses Docker secrets for secure pip configuration:
+
+
+```bash
+export ARTIFACTORY_HOST=PLACEHOLDER, i.e. <my jfrog platform host> without http schema
+export ARTIFACTORY_DOCKER_REPO=PLACEHOLDER i.e. local/virtual repository name
+TAG=<DOCKER_TAG>
+docker login ${ARTIFACTORY_HOST}
+
+# Use Artifactory base image (if available)
+docker build \
+  --platform linux/amd64 \
+  -t ${ARTIFACTORY_HOST}/${ARTIFACTORY_DOCKER_REPO}/azureml-training:${TAG} \
+  -f docker/Dockerfile \
+  --secret id=pipconfig,src=${PIP_CONFIG_FILE} \
+  --build-arg BASE_IMAGE="${ARTIFACTORY_HOST}/${ARTIFACTORY_DOCKER_REPO}/python:3.13.11-slim" \
+  --push \
+  .
+```
+
+### 3. Run Training Pipeline
+This step creats a new training job inside the AzureML workspace and runs it. the job uses the training docker container we built and pushed in the previous steps.
+
+
+
+
+* Clone config/config.example.yaml into config/config.yaml and update the missing 'PLACEHOLDER' values
+
+``` bash
+cp config/config.example.yaml config/config.yaml
+```
+
+
+Submit the training pipeline:
+
+```bash
+    cd <project directory>
+    python pipeline/training_pipeline.py
+```
+Once the training pipeline completes you will get a URL for the Azure ML job it created, use that to open the training job and follow its progress.
+
+Deployment (with specific version):
+```bash
+cd <project directory>
+python pipeline/deployment_pipeline.py --model-name iris-classifier --model-version v20260118123456
+```
+
+---
+## Advanced Setup (With automatic secret rotation)
+
 
 ### Initialize Setup Environment (R&R: Azure Administrator)
 
@@ -357,13 +448,8 @@ az rest --method PATCH \
 
 ---
 
-### JFrog Setup (R&R: JFrog Administrator or Project Admin)
-### Prerequisites
-* JFrog Pypi remote repository
-* JFrog Docker Virtual, Local and Remote repositories
-* JFrog Machine Learning Repository
 
-### JFrog Artifactory OIDC Configuration
+### JFrog Artifactory OIDC Configuration (R&R: JFrog Administrator or Project Admin)
 
 Configure JFrog Artifactory to accept OIDC tokens from Azure. This involves creating an OIDC provider and an identity mapping in Artifactory.
 
@@ -419,7 +505,7 @@ For more details, see the [JFrog REST API documentation for creating OIDC config
 
    ``` az keyvault secret set --vault-name <key vault name> --name artifactory-access-token-secret --value '{"access_token":"<ACCESS TOKEN>","username":"<USERNAME>"}' ```
 
-** TODO: Add the manual instractiones to create Azyre Function App
+** TODO: Add the manual instractiones to create Azure Function App
 
 > **Important:** Save these values for later use:
 > - `Function App Enterprise Application Object ID`  (also call `function_app_identity_principal_id`)
@@ -525,72 +611,14 @@ curl -X GET "https://$ARTIFACTORY_URL/access/api/v1/oidc/$OIDC_PROVIDER_NAME" \
   -H "Authorization: Bearer $ARTIFACTORY_ADMIN_TOKEN" | jq
 ```
 
+---
+## You are ready to execute the Training Pipiline
+See: [Run Training Pipeline](#3-run-training-pipeline)
+
 
 
 ---
-### Configure training (R&R: ML Engineer)
-### Prerequisites
-* Python >= 3.11
-* Create pip.conf pointing to you JFrog platform. (See pip.example.conf for referance)
-* Azure CLI configured
-* Login to Azure account. e.g.`az login --tenant <Tenant id>`, or any othe preferd method.
-* Ensure Docker BuildKit is enabled for secret support: `export DOCKER_BUILDKIT=1`
 
-### 1. Set Up Python virtual environment
-```bash
-cd <project directory>
-export PIP_CONFIG_FILE=<pip.conf file you want to use>
-source setup_venv.sh
-```
-
-### 2. Build, Tag and Push Docker Image
-This step builts the training image, you can use the example as-is or replace its training logic on `src/train.py` script.
-
-Build the Docker image with the specified tag. The build uses Docker secrets for secure pip configuration:
-
-
-```bash
-export ARTIFACTORY_HOST=PLACEHOLDER, i.e. <my jfrog platform host> without http schema
-export ARTIFACTORY_DOCKER_REPO=PLACEHOLDER i.e. local/virtual repository name
-TAG=<DOCKER_TAG>
-docker login ${ARTIFACTORY_HOST}
-
-# Use Artifactory base image (if available)
-docker build \
-  --platform linux/amd64 \
-  -t ${ARTIFACTORY_HOST}/${ARTIFACTORY_DOCKER_REPO}/azureml-training:${TAG} \
-  -f docker/Dockerfile \
-  --secret id=pipconfig,src=${PIP_CONFIG_FILE} \
-  --build-arg BASE_IMAGE="${ARTIFACTORY_HOST}/${ARTIFACTORY_DOCKER_REPO}/python:3.13.11-slim" \
-  --push \
-  .
-```
-
-### 3. Run Training Pipeline
-This step creats a new training job inside the AzureML workspace and runs it. the job uses the training docker container we built and pushed in the previous steps.
-
-
-
-* Copy the example variables and set your values:
-
-``` bash
-cp config/config.example.yaml config/config.yaml
-```
-* update the missing 'PLACEHOLDER' values
-
-Submit the training pipeline to AzureML:
-
-```bash
-    cd <project directory>
-    python pipeline/training_pipeline.py
-```
-Once the training pipeline completes you will get a URL for the Azure ML job it created, use that to open the training job and follow its progress.
-
-Deployment (with specific version):
-```bash
-cd <project directory>
-python pipeline/deployment_pipeline.py --model-name iris-classifier --model-version v20260118123456
-```
 ## Troubleshooting
 
 ### Docker Build Issues
