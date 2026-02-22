@@ -71,6 +71,9 @@ when you **Create Identity Mapping for OIDC Provider in Artifactory** at the nex
    cd 2_secret_rotation_function/terraform
    func azure functionapp publish <function_app_name> --python --build local
    ```
+   **Verify successfull Fucntion app deployment and execution** 
+   * Check in the Azure Key Vault that the secret `artifactory-access-token-secret` contain verstion with vald secret value.
+   e.g. `{"access_token": "<TOKEN>", "username": "<USERNAME>"}`
 
    **Requirements:**
    - [Azure Functions Core Tools](https://docs.microsoft.com/azure/azure-functions/functions-run-local) v4 (e.g. `brew install azure-functions-core-tools@4` on macOS). Ensure `func` is on your PATH or use the full path (e.g. `/opt/homebrew/bin/func`).

@@ -1,3 +1,15 @@
+# Wait 120s after workspace and private endpoint (subnet_2, VNET) are ready before creating compute cluster
+resource "time_sleep" "before_compute" {
+  create_duration = "120s"
+
+  depends_on = [
+    azurerm_machine_learning_workspace.default,
+    azurerm_private_endpoint.workspace,
+    azurerm_virtual_network.my_terraform_network,
+    azurerm_subnet.my_terraform_subnet_2,
+  ]
+}
+
 # Azure Machine Learning
 # Compute Cluster
 resource "azurerm_machine_learning_compute_cluster" "compute" {
@@ -19,7 +31,7 @@ resource "azurerm_machine_learning_compute_cluster" "compute" {
   }
   tags = var.tags
 
-  depends_on = [azurerm_machine_learning_workspace.default, azurerm_private_endpoint.workspace]
+  depends_on = [time_sleep.before_compute]
 }
 
 # ──────────────────────────────────────────────

@@ -571,7 +571,12 @@ This step creats a new training job inside the AzureML workspace and runs it. th
 
 
 
-Clone config/config.example.yaml into config/config.yaml and update the missing 'PLACEHOLDER' values
+* Copy the example variables and set your values:
+
+``` bash
+cp config/config.example.yaml config/config.yaml
+```
+* update the missing 'PLACEHOLDER' values
 
 Submit the training pipeline to AzureML:
 
