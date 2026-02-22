@@ -19,6 +19,7 @@ build/
 
 # Config
 .cursor/
+.github/
 config/config.yaml
 config/config.yaml.poc
 # Environment variables
