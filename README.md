@@ -291,6 +291,7 @@ sequenceDiagram
 - **Access Control:** Role-based access via Azure and Artifactory
 - **Used Credentials:** JFrog access token stored on Azure Key Vault, with an optional enhanced setup allowing for auto-rotated access tokens managed by Azure function. with token rotation based on OIDC and Azure App. registration & Managed Identity (see advanced setup under secret_rotation_function sub folder)
 
+## Quick Start
 
 ### Intiliaze Setup Environment (R&R: Azure Administrator)
 ### Prerequisites
