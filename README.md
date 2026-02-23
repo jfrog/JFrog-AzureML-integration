@@ -450,46 +450,6 @@ az rest --method PATCH \
 ---
 
 
-### JFrog Artifactory OIDC Configuration (R&R: JFrog Administrator or Project Admin)
-
-Configure JFrog Artifactory to accept OIDC tokens from Azure. This involves creating an OIDC provider and an identity mapping in Artifactory.
-
-For more information, see the [JFrog Artifactory OIDC Documentation](https://www.jfrog.com/confluence/display/JFROG/Access+Tokens#AccessTokens-OIDCIntegration).
-
-####  Get Artifactory Admin Token
-
-You'll need an Artifactory admin access token to configure OIDC. If you don't have one, create it in Artifactory under **Administration** → **Identity and Access** → **Access Tokens**.
-
-```bash
-# Set your Artifactory details
-ARTIFACTORY_URL="your-instance.jfrog.io"
-ARTIFACTORY_ADMIN_TOKEN="your-admin-access-token"
-ARTIFACTORY_USER="azure-aks-user"  # User that will be mapped to OIDC tokens
-OIDC_PROVIDER_NAME="azure-aks-oidc-provider"  # Choose a name
-```
-
-
-
-### Create OIDC Provider in Artifactory
-
-```bash
-curl -X POST "https://$ARTIFACTORY_URL/access/api/v1/oidc" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $ARTIFACTORY_ADMIN_TOKEN" \
-  -d "{
-    \"name\": \"$OIDC_PROVIDER_NAME\",
-    \"issuer_url\": \"https://login.microsoftonline.com/$TENANT_ID/v2.0\",
-    \"description\": \"OIDC provider for Azure ML\",
-    \"provider_type\": \"Azure\",
-    \"token_issuer\": \"https://login.microsoftonline.com/$TENANT_ID/v2.0\",
-    \"audience\": \"$APP_CLIENT_ID\",
-    \"use_default_proxy\": false
-  }"
-```
-
-For more details, see the [JFrog REST API documentation for creating OIDC configuration](https://jfrog.com/help/r/jfrog-rest-apis/create-oidc-configuration).
-
----
 
 
 ### Setup AzureML Workspace and Azure Function for Token rotation
@@ -545,13 +505,19 @@ The script deploys the function and then **invokes it once** so the Key Vault se
 
 ---
 
-### Create Identity Mapping for OIDC Provider in Artifactory
+### JFrog Artifactory OIDC Configuration (R&R: JFrog Administrator or Project Admin)
 
-The identity mapping tells Artifactory how to map Azure OIDC tokens to Artifactory users.
+Configure JFrog Artifactory to accept OIDC tokens from Azure. This involves creating an OIDC provider and an identity mapping in Artifactory.
 
-> **⚠️ Important:** The default is **6 hours ( 21600 seconds)**. The example below uses 21600 seconds to verify the  token is revocable. 
+For more information, see the [JFrog Artifactory OIDC Documentation](https://www.jfrog.com/confluence/display/JFROG/Access+Tokens#AccessTokens-OIDCIntegration).
 
-For more details, see the [JFrog Revocable Expiry Threshold](https://jfrog.com/help/r/jfrog-platform-administration-documentation/use-the-revocable-and-persistency-thresholds).
+### Prerquasit
+
+* Get the `Function App Enterprise Application Object ID`  (also call `function_app_identity_principal_id`) for declaring the environment variable: `FUNCTION_APP_SUBJECT_ID`
+
+####  Get Artifactory Admin Token
+
+You'll need an Artifactory admin access token to configure OIDC. If you don't have one, create it in Artifactory under **Administration** → **Identity and Access** → **Access Tokens**.
 
 ```bash
 # Set your Artifactory details
@@ -562,8 +528,40 @@ OIDC_PROVIDER_NAME="azure-aks-oidc-provider"  # Choose a name
 TENANT_ID="<tenant id from Create Azure AD Application step>" #Azure Tenant id
 APP_CLIENT_ID="<client id from Create Azure AD Application step>" #Azure AD app client id
 FUNCTION_APP_SUBJECT_ID="function_app_identity_principal_id" #Azure Function App subject id
-
 ```
+
+
+
+### Create OIDC Provider in Artifactory
+
+```bash
+curl -X POST "https://$ARTIFACTORY_URL/access/api/v1/oidc" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ARTIFACTORY_ADMIN_TOKEN" \
+  -d "{
+    \"name\": \"$OIDC_PROVIDER_NAME\",
+    \"issuer_url\": \"https://login.microsoftonline.com/$TENANT_ID/v2.0\",
+    \"description\": \"OIDC provider for Azure ML\",
+    \"provider_type\": \"Azure\",
+    \"token_issuer\": \"https://login.microsoftonline.com/$TENANT_ID/v2.0\",
+    \"audience\": \"$APP_CLIENT_ID\",
+    \"use_default_proxy\": false
+  }"
+```
+
+For more details, see the [JFrog REST API documentation for creating OIDC configuration](https://jfrog.com/help/r/jfrog-rest-apis/create-oidc-configuration).
+
+---
+
+### Create Identity Mapping for OIDC Provider in Artifactory
+
+The identity mapping tells Artifactory how to map Azure OIDC tokens to Artifactory users.
+
+> **⚠️ Important:** The default is **6 hours ( 21600 seconds)**. The example below uses 21600 seconds to verify the  token is revocable. 
+
+For more details, see the [JFrog Revocable Expiry Threshold](https://jfrog.com/help/r/jfrog-platform-administration-documentation/use-the-revocable-and-persistency-thresholds).
+
+
 
 ```bash
 curl -X POST "https://$ARTIFACTORY_URL/access/api/v1/oidc/$OIDC_PROVIDER_NAME/identity_mappings" \
