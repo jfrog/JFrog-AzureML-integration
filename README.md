@@ -761,8 +761,8 @@ cd 2_secret_rotation_function/terraform
 The script deploys the function and then **invokes it once** so the Key Vault secret is updated immediately with a real Artifactory access token (otherwise the token would only be refreshed on the next timer run).
 
 ---
-## You are ready to start working
-See: [Run Training Pipeline](#3-run-training-pipeline)
+## You are ready to setup the AzureML and JFrog development environment
+See: [JFrog Setup (R&R: JFrog Administrator or Project Admin)](#jfrog-setup-rr-jfrog-administrator-or-project-admin)
 
 
 
