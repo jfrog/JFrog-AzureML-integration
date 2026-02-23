@@ -25,7 +25,7 @@ This module provisions the **Azure Machine Learning workspace** and supporting i
 
 1. **Copy the example variables and set your values:**
    ```bash
-   cd terraform
+   cd 1_azure_machine_learning_workspace/terraform
    cp terraform.tfvars.example terraform.tfvars
    # Edit terraform.tfvars: subscription_id, ip_rules (allowed IPs), and optionally location, prefix, environment, compute settings, tags.
    ```
