@@ -34,6 +34,7 @@ echo "Creating zip package from $SOURCE_DIR ..."
   -x "*.pyc" \
 )
 
+
 echo "Deploying to Function App: $FUNCTION_APP_NAME (resource group: $RG_NAME) ..."
 az functionapp deployment source config-zip \
   --resource-group "$RG_NAME" \

@@ -291,7 +291,7 @@ sequenceDiagram
 - **Access Control:** Role-based access via Azure and Artifactory
 - **Used Credentials:** JFrog access token stored on Azure Key Vault, with an optional enhanced setup allowing for auto-rotated access tokens managed by Azure function. with token rotation based on OIDC and Azure App. registration & Managed Identity (see advanced setup under secret_rotation_function sub folder)
 
-## Quick Start
+## Quick Start (Bring Your Own Workspace)
 
 ### Intiliaze Setup Environment (R&R: Azure Administrator)
 ### Prerequisites
@@ -300,15 +300,13 @@ sequenceDiagram
 * Artifactory Access Token and Username
 ### Set Up
 TODO: Verify with @avivka that we can keep using system-assigned identity and remove the manged option and the roles setup.
-* Create Manage Identity and assign it with "Key Vault Secrets User" role for the Workaspace's Key-Vault:
-    1. In Azure Managed Identity, create a new managed identity and name it. make sure to choose the AzureML workspace Resource Group and Region
-    2. Return to the Azure ML Workspace and inside the overview page drill down to its key vault
-    3. inside the Azure ML workspace key vault, open the Access control (IAM)
-    4. Add role assignment to role "Key Vault Secrets User" for the managed identity you created above    
-    5. Still inside the Workspace Keyvault entity Open > settings > Access Configuration settings and Make sure 'Azure role-based access control (recommended)' is selected
+* Add to the Workspace Compute Identity (Systsem-assigned or User_assigned) the following RBAC:
+  Key-Vault
+  Storage account
 * Create keyvault secret containing the JFrog access token and username
 
    ``` az keyvault secret set --vault-name <key vault name> --name artifactory-access-token-secret --value '{"access_token":"<ACCESS TOKEN>","username":"<USERNAME>"}' ```
+
 ### JFrog Setup (R&R: JFrog Administrator or Project Admin)
 ### Prerequisites
 * JFrog Pypi remote repository
@@ -358,8 +356,6 @@ docker build \
 This step creats a new training job inside the AzureML workspace and runs it. the job uses the training docker container we built and pushed in the previous steps.
 
 
-
-
 * Clone config/config.example.yaml into config/config.yaml and update the missing 'PLACEHOLDER' values
 
 ``` bash
@@ -396,7 +392,7 @@ Before you begin, ensure you have the following:
 - **Access to JFrog Artifactory** with admin permissions
 
 
-### Create Azure AD Application
+### Create Azure Entra ID App Registration
 
 ```bash
 # Set variables
@@ -439,6 +435,7 @@ az rest --method PATCH \
   --body '{"api":{"requestedAccessTokenVersion": 2}}'
 ```
 
+
 **Alternative: Configure via Azure Portal**
 
 1. Navigate to **Azure Portal** → **Azure Active Directory** → **App registrations**
@@ -452,33 +449,28 @@ az rest --method PATCH \
 
 
 
-### Setup AzureML Workspace and Azure Function for Token rotation
+### Setup AzureML Workspace and Azure Function for Token rotation (R&R: Azure Administrator)
 
 ### Option 1 - Manual
 
 ### Prerequisites
-* AzureML Workspace (R&R: Azure Administrator)
+* Artifactory Access Token and Username
+
+### Set Up
+
+** TODO: @AvivK Add the manual instractiones to create Azure Function App
+
+* How to build AzureML Workspace + Vnet etc (R&R: Azure Administrator)
 * In the Azure Machine Learning workspace IAM add **Contributor** Role to the relevant users or Identities.
 * In the Azure Key Vault IAM add **Key Vault Administrator** Role to enable one time secret creation to the relevant users or Identities.
 
-### Set Up
+
 * create keyvault secret containing the JFrog access token and username
 
    ``` az keyvault secret set --vault-name <key vault name> --name artifactory-access-token-secret --value '{"access_token":"<ACCESS TOKEN>","username":"<USERNAME>"}' ```
 
-** TODO: Add the manual instractiones to create Azure Function App
-
 > **Important:** Save these values for later use:
 > - `Function App Enterprise Application Object ID`  (also call `function_app_identity_principal_id`)
-
-### Deploy function code
-
-```bash
-cd 2_secret_rotation_function/terraform
-./deploy-function.sh
-```
-
-The script deploys the function and then **invokes it once** so the Key Vault secret is updated immediately with a real Artifactory access token (otherwise the token would only be refreshed on the next timer run).
 
 ---
 
@@ -502,6 +494,155 @@ The script deploys the function and then **invokes it once** so the Key Vault se
 
 ### Deploy
 * See [2_secret_rotation_function/terraform/README.md — Usage](2_secret_rotation_function/terraform/README.md#usage).
+
+---
+## Federated Identity Credentials (R&R: Azure Administrator)
+
+Federated credentials allow the Function App managed identity to exchange tokens with the Azure Entra ID App Registration. This establishes trust between your Function App and Azure Entra ID.
+
+For more information, see the [Azure Managed Identities documentation](https://learn.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/).
+
+### Prerquiste
+
+```bash
+APP_CLIENT_ID=<Entra ID App Registry client id> #(also called `azure_app_client_id`)
+TENANT_ID=<tenant id> #(also called `azure_tenant_id`)
+FUNCTION_APP_NAME="<your-function-app-name>" #e.g. artifactory-token-rotation
+RESOURCE_GROUP="<your-resource-group>"
+```
+### Get Function App Cluster Information
+
+```bash
+
+PRINCIPAL_ID=$(az functionapp identity show \
+  --name $FUNCTION_APP_NAME \
+  --resource-group $RESOURCE_GROUP \
+  --query "principalId" \
+  -o tsv)
+```
+
+### Create Federated Identity Credential
+
+```bash
+
+FEDERATED_CREDENTIAL_NAME="function-app-federated-credential"
+AUDIENCE="api://AzureADTokenExchange"
+ISSUER="https://login.microsoftonline.com/$TENANT_ID/v2.0"
+
+# Create the federated credential
+az ad app federated-credential create \
+  --id "$APP_CLIENT_ID" \
+  --parameters "{
+    \"name\": \"$FEDERATED_CREDENTIAL_NAME\",
+    \"issuer\": \"$ISSUER\",
+    \"subject\": \"$PRINCIPAL_ID\",
+    \"audiences\": [\"$AUDIENCE\"],
+    \"description\": \"Federated credential for Function App managed identity\"
+  }"
+```
+
+### Verify Federated Credential
+
+```bash
+# List federated credentials
+az ad app federated-credential list --id "$APP_CLIENT_ID"
+```
+
+You should see your federated credential with:
+- `issuer`: `https://login.microsoftonline.com/<TENANT_ID>/v2.0`
+- `subject`: Your Function App identity object ID
+- `audiences`: `["api://AzureADTokenExchange"]`
+
+
+### Update Azure Entra ID App Registration by enabling Assignment Required (R&R: Azure Administrator)
+
+By default, **Assignment Required** is set to **No** on the enterprise application. This means any user or service principal in your tenant can acquire an access token from the app registration. Since the JFrog Credential Provider exchanges this token with Artifactory for image pull credentials, leaving this open is a security concern.
+
+Setting **Assignment Required** to **Yes** ensures that only explicitly assigned principals can obtain tokens from the app.
+
+**Enable via Azure Portal:**
+
+1. Navigate to **Azure Portal** → **Enterprise applications**
+2. Search for your application by name
+3. Go to **Properties**
+4. Set **Assignment required?** to **Yes**
+5. Click **Save**
+
+**Enable via Azure CLI:**
+
+```bash
+SPN_OBJECT_ID=$(az ad sp list --filter "appId eq '$APP_CLIENT_ID'" --query "[0].id" -o tsv)
+
+az rest --method PATCH \
+  --uri "https://graph.microsoft.com/v1.0/servicePrincipals/$SPN_OBJECT_ID" \
+  --headers "Content-Type=application/json" \
+  --body '{"appRoleAssignmentRequired": true}'
+```
+
+After enabling this, the credential provider will fail to obtain tokens because the Function App own service principal is not assigned. To fix this, assign the Function App service principal to the Application Registry service principle by creating an app role and assigning it:
+
+**1. Create an App Role**
+
+Navigate to **Azure Portal** → **App registrations** → your app → **App roles** → **Create app role**:
+- **Display name**: e.g., `Task.Read`
+- **Allowed member types**: Applications
+- **Value**: `Task.Read`
+- **Description**: Role for credential provider access
+
+Or via CLI:
+
+```bash
+OBJECT_ID=$(az ad app show --id "$APP_CLIENT_ID" --query "id" -o tsv)
+
+az rest --method PATCH \
+  --uri "https://graph.microsoft.com/v1.0/applications/$OBJECT_ID" \
+  --headers "Content-Type=application/json" \
+  --body '{
+    "appRoles": [{
+      "allowedMemberTypes": ["Application"],
+      "displayName": "Task.Read",
+      "id": "'$(uuidgen)'",
+      "isEnabled": true,
+      "description": "Role for credential provider access",
+      "value": "Task.Read"
+    }]
+  }'
+```
+
+**2. Get the SPN Object ID and Role ID**
+
+```bash
+RESOURCE_SPN_OBJECT_ID=$(az ad sp show --id "$APP_CLIENT_ID" --query "id" -o tsv)
+ROLE_ID=$(az ad sp show --id "$RESOURCE_SPN_OBJECT_ID" --query "appRoles[?value=='Task.Read'].id" -o tsv)
+```
+
+**3. Get the Principal ID of the Caller (Function App Managed Identity)**
+```bash
+
+PRINCIPAL_ID=$(az functionapp identity show \
+  --name $FUNCTION_APP_NAME \
+  --resource-group $RESOURCE_GROUP \
+  --query "principalId" \
+  -o tsv)
+```
+
+
+
+**4. Assign the Service Principal to itself**
+
+```bash
+az rest --method POST \
+  --uri "https://graph.microsoft.com/v1.0/servicePrincipals/$PRINCIPAL_ID/appRoleAssignments" \
+  --headers "Content-Type=application/json" \
+  --body "{
+    \"principalId\": \"$PRINCIPAL_ID\",
+    \"resourceId\": \"$RESOURCE_SPN_OBJECT_ID\",
+    \"appRoleId\": \"$ROLE_ID\"
+  }"
+```
+
+After this, the credential provider will continue to work via the federated credentials on the Function App managed identity, but other apps in your tenant will no longer be able to obtain tokens from this app registration.
+
 
 ---
 
@@ -550,8 +691,6 @@ curl -X POST "https://$ARTIFACTORY_URL/access/api/v1/oidc" \
 ```
 
 For more details, see the [JFrog REST API documentation for creating OIDC configuration](https://jfrog.com/help/r/jfrog-rest-apis/create-oidc-configuration).
-
----
 
 ### Create Identity Mapping for OIDC Provider in Artifactory
 
@@ -609,6 +748,17 @@ curl -X GET "https://$ARTIFACTORY_URL/access/api/v1/oidc" \
 curl -X GET "https://$ARTIFACTORY_URL/access/api/v1/oidc/$OIDC_PROVIDER_NAME" \
   -H "Authorization: Bearer $ARTIFACTORY_ADMIN_TOKEN" | jq
 ```
+
+---
+
+### Deploy function code
+
+```bash
+cd 2_secret_rotation_function/terraform
+./deploy-function.sh
+```
+
+The script deploys the function and then **invokes it once** so the Key Vault secret is updated immediately with a real Artifactory access token (otherwise the token would only be refreshed on the next timer run).
 
 ---
 ## You are ready to execute the Training Pipiline

@@ -20,9 +20,20 @@ logger = logging.getLogger("jfrog-token-rotation")
 
 
 def _get_credential():
-
-    logger.info("Using DefaultAzureCredential")
-    return DefaultAzureCredential()
+    """
+    Get Azure credential.
+    Uses a User-Assigned Managed Identity if 'UAMI_CLIENT_ID' is set,
+    otherwise falls back to DefaultAzureCredential (which handles System-Assigned MI).
+    """
+    # Use a distinct variable for the Managed Identity's Client ID
+    mi_client_id = os.environ.get("UAMI_CLIENT_ID") 
+    
+    if mi_client_id:
+       logger.info("Using user-assigned managed identity with client_id: %s", mi_client_id)
+       return ManagedIdentityCredential(client_id=mi_client_id)
+    else:
+      logger.info("Using DefaultAzureCredential")
+      return DefaultAzureCredential()
 
 
 def _get_key_vault_client(vault_name: str) -> SecretClient:
@@ -38,7 +49,14 @@ def _get_azure_ad_token(audience: str) -> str:
     This token will be exchanged for a JFrog access token.
     """
     credential = _get_credential()
+    
+    # The SDK requires a scope ending in /.default
+    #scope = audience if audience.endswith("/.default") else f"{audience}/.default"
+    
+    logger.info("Getting Azure AD token for scope: %s", audience)
     token = credential.get_token(audience)
+    
+    logger.info("Azure AD token obtained successfully.")
     return token.token
 
 

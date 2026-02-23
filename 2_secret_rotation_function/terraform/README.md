@@ -25,9 +25,9 @@ cp terraform.tfvars.example terraform.tfvars
 ### Edit terraform.tfvars with your: 
 * subscription ID (`subscription_id`)
 * Azure Resource Group name (`resource_group_name`)
-* Artifactory URL (`artifactory_url`)
-* OIDC provider name (`jfrog_oidc_provider_name`)
-* Azure Application registry client id (`azure_ad_token_audience`)
+* Artifactory URL (`artifactory_url` from `$ARTIFACTORY_URL`)
+* OIDC provider name (`jfrog_oidc_provider_name` from `$OIDC_PROVIDER_NAME`)
+* Azure Application registry client id (`azure_ad_token_audience` from `$APP_CLIENT_ID`)
 * Workspace Key Vault name (`key_vault_name`)
 * Workespace Storage Account (`existing_storage_account_name`)
 * VNET subnet id (`function_app_integration_subnet_id`)
@@ -52,10 +52,10 @@ cp terraform.tfvars.example terraform.tfvars
 > - `function_app_identity_principal_id` — you will need it 
 when you **Create Identity Mapping for OIDC Provider in Artifactory** at the next step
 
-3. **Create Identity Mapping for OIDC Provider in Artifactory**:
+3. **JFrog Artifactory OIDC Configuration**:
 
 * Follow the instractiones in the link below:
-[Link to Create Identity Mapping for OIDC Provider in Artifactory](../../README.md#create-identity-mapping-for-oidc-provider-in-artifactory).
+[Link to JFrog Artifactory OIDC Configuration](../../README.md#jfrog-artifactory-oidc-configuration-rr-jfrog-administrator-or-project-admin).
 
 4. **Post-install: Deploy function code** — after a successful apply, either run the script (recommended) or publish manually:
 
