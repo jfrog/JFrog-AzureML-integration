@@ -381,7 +381,7 @@ python pipeline/deployment_pipeline.py --model-name iris-classifier --model-vers
 ## Advanced Setup (With automatic secret rotation)
 
 
-### Initialize Setup Environment (R&R: Azure Administrator)
+### 1. Initialize Setup Environment (R&R: Azure Administrator)
 
 
 ### Prerequisites
@@ -449,7 +449,7 @@ az rest --method PATCH \
 
 
 
-### Setup AzureML Workspace and Azure Function for Token rotation (R&R: Azure Administrator)
+### 2. Setup AzureML Workspace and Azure Function for Token rotation (R&R: Azure Administrator)
 
 ### Option 1 - Manual
 
@@ -496,7 +496,7 @@ az rest --method PATCH \
 * See [2_secret_rotation_function/terraform/README.md — Usage](2_secret_rotation_function/terraform/README.md#usage).
 
 ---
-## Federated Identity Credentials (R&R: Azure Administrator)
+## 3. Federated Identity Credentials (R&R: Azure Administrator)
 
 Federated credentials allow the Function App managed identity to exchange tokens with the Azure Entra ID App Registration. This establishes trust between your Function App and Azure Entra ID.
 
@@ -521,7 +521,7 @@ PRINCIPAL_ID=$(az functionapp identity show \
   -o tsv)
 ```
 
-### Create Federated Identity Credential
+### 4. Create Federated Identity Credential
 
 ```bash
 
@@ -554,7 +554,7 @@ You should see your federated credential with:
 - `audiences`: `["api://AzureADTokenExchange"]`
 
 
-### Update Azure Entra ID App Registration by enabling Assignment Required (R&R: Azure Administrator)
+### 5. Update Azure Entra ID App Registration by enabling Assignment Required (R&R: Azure Administrator)
 
 By default, **Assignment Required** is set to **No** on the enterprise application. This means any user or service principal in your tenant can acquire an access token from the app registration. Since the JFrog Credential Provider exchanges this token with Artifactory for image pull credentials, leaving this open is a security concern.
 
@@ -646,7 +646,7 @@ After this, the credential provider will continue to work via the federated cred
 
 ---
 
-### JFrog Artifactory OIDC Configuration (R&R: JFrog Administrator or Project Admin)
+### 6. JFrog Artifactory OIDC Configuration (R&R: JFrog Administrator or Project Admin)
 
 Configure JFrog Artifactory to accept OIDC tokens from Azure. This involves creating an OIDC provider and an identity mapping in Artifactory.
 
@@ -751,7 +751,7 @@ curl -X GET "https://$ARTIFACTORY_URL/access/api/v1/oidc/$OIDC_PROVIDER_NAME" \
 
 ---
 
-### Deploy function code
+### 7. Deploy function code
 
 ```bash
 cd 2_secret_rotation_function/terraform
@@ -761,7 +761,7 @@ cd 2_secret_rotation_function/terraform
 The script deploys the function and then **invokes it once** so the Key Vault secret is updated immediately with a real Artifactory access token (otherwise the token would only be refreshed on the next timer run).
 
 ---
-## You are ready to execute the Training Pipiline
+## You are ready to start working
 See: [Run Training Pipeline](#3-run-training-pipeline)
 
 
