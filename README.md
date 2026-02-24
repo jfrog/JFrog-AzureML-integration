@@ -655,7 +655,7 @@ PRINCIPAL_ID=$(az functionapp identity show \
   -o tsv)
 ```
 
-**4. Assign the Function App Function App Managed Identity to Entra ID App registration prinsiple id**
+**4. Assign the Function App Managed Identity to Entra ID App registration prinsiple id**
 
 ```bash
 az rest --method POST \
