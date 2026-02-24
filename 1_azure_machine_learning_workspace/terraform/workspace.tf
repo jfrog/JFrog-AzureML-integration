@@ -15,7 +15,8 @@ resource "azurerm_key_vault" "default" {
   sku_name                    = "standard"
   rbac_authorization_enabled  = true
   public_network_access_enabled = true
-  purge_protection_enabled    = false
+  purge_protection_enabled    = true
+  soft_delete_retention_days = 7
     network_acls {
     bypass                     = "AzureServices"
     default_action             = "Deny"
@@ -40,6 +41,11 @@ resource "azurerm_storage_account" "default" {
     default_action             = "Deny"
     ip_rules                   = var.ip_rules
     virtual_network_subnet_ids = [azurerm_subnet.my_terraform_subnet_1.id,azurerm_subnet.my_terraform_subnet_2.id]
+  }
+  blob_properties {
+    delete_retention_policy {
+      days = 7 # Retention period in days (1 to 365); policy is enabled when days is set
+    }
   }
   tags = var.tags
   depends_on = [azurerm_virtual_network.my_terraform_network]

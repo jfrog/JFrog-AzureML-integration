@@ -35,7 +35,7 @@ echo "Creating zip package from $SOURCE_DIR ..."
 )
 
 
-echo "Deploying to Function App: $FUNCTION_APP_NAME (resource group: $RG_NAME) ..."
+# echo "Deploying to Function App: $FUNCTION_APP_NAME (resource group: $RG_NAME) ..."
 az functionapp deployment source config-zip \
   --resource-group "$RG_NAME" \
   --name "$FUNCTION_APP_NAME" \
@@ -43,16 +43,18 @@ az functionapp deployment source config-zip \
   --build-remote true \
   --timeout 600
 
-echo "Cleaning up zip ..."
+# echo "Cleaning up zip ..."
 rm -f "$ZIP_FILE"
 
 # Invoke the timer-triggered function once so the Key Vault secret is updated immediately
 # (otherwise it would only run on the next timer schedule)
+
+
 echo "Triggering one-time run of KeyVaultSecretRotation to update the Artifactory token in Key Vault ..."
 HOSTNAME="$(terraform output -raw function_app_default_hostname)"
 MASTER_KEY="$(az functionapp keys list --resource-group "$RG_NAME" --name "$FUNCTION_APP_NAME" --query masterKey -o tsv 2>/dev/null || true)"
 if [ -n "$MASTER_KEY" ]; then
-  HTTP_CODE="$(curl -s -o /tmp/func_invoke_response.txt -w "%{http_code}" -X POST "https://${HOSTNAME}/admin/functions/KeyVaultSecretRotation" \
+  HTTP_CODE="$(curl -s -o /tmp/func_invoke_response.txt -w "%{http_code}" -X POST "https://${HOSTNAME}/api/KeyVaultSecretRotation" \
     -H "x-functions-key: $MASTER_KEY" \
     -H "Content-Type: application/json" \
     -d '{}')"
@@ -66,5 +68,5 @@ if [ -n "$MASTER_KEY" ]; then
 else
   echo "Warning: Could not retrieve function app key; skipping one-time invoke. Secret will update on next timer run." >&2
 fi
-
+  
 echo "Done."x

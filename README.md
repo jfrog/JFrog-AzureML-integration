@@ -694,7 +694,7 @@ You'll need an Artifactory admin access token to configure OIDC. If you don't ha
 ARTIFACTORY_URL="your-instance.jfrog.io"
 ARTIFACTORY_ADMIN_TOKEN="your-admin-access-token"
 ARTIFACTORY_USER="azure-aks-user"  # User that will be mapped to OIDC tokens
-OIDC_PROVIDER_NAME="azure-aks-oidc-provider"  # Choose a name
+OIDC_PROVIDER_NAME="azure-ml-oidc-provider"  # Choose a name
 ```
 
 ### Create OIDC Provider in Artifactory
@@ -720,7 +720,7 @@ For more details, see the [JFrog REST API documentation for creating OIDC config
 
 The identity mapping tells Artifactory how to map Azure OIDC tokens to Artifactory users.
 
-> **⚠️ Important:** The default is **6 hours ( 21600 seconds)**. The example below uses 21600 seconds to verify the  token is revocable. 
+> **Important:** The default is **6 hours ( 21600 seconds)**. The example below uses 21600 seconds to verify the  token is revocable. 
 
 For more details, see the [JFrog Revocable Expiry Threshold](https://jfrog.com/help/r/jfrog-platform-administration-documentation/use-the-revocable-and-persistency-thresholds).
 
@@ -758,7 +758,7 @@ curl -X POST "https://$ARTIFACTORY_URL/access/api/v1/oidc/$OIDC_PROVIDER_NAME/id
 
 For more information, see the [JFrog Platform Administration documentation on identity mappings](https://jfrog.com/help/r/jfrog-platform-administration-documentation/identity-mappings).
 
-### ✅ Verify OIDC Provider
+### Verify OIDC Provider
 
 ```bash
 # List OIDC providers
@@ -779,8 +779,7 @@ cd 2_secret_rotation_function/terraform
 ./deploy-function.sh
 ```
 
-The script deploys the function and then **invokes it once** so the Key Vault secret is updated immediately with a real Artifactory access token (otherwise the token would only be refreshed on the next timer run).
-
+#### The script deploys the function and then **invokes it once** so the Key Vault secret is updated immediately with a real Artifactory access token (otherwise the token would only be refreshed on the next timer invocation). In case of any error or failure please see [Azure Function App troubleshooting documentation](https://learn.microsoft.com/en-us/troubleshoot/azure/azure-functions/welcome-azure-functions)
 ---
 
 ### 8. You are ready to setup the AzureML and JFrog development environment

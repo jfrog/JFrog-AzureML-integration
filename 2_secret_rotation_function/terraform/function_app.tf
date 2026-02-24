@@ -26,7 +26,7 @@ resource "azurerm_function_app_flex_consumption" "function_app" {
   storage_container_endpoint  = "${data.azurerm_storage_account.existing.primary_blob_endpoint}${var.function_storage_container_name}"
   storage_authentication_type = "SystemAssignedIdentity"
 
-
+  https_only                 = true
   runtime_name    = "python"
   runtime_version = var.function_python_version
 
