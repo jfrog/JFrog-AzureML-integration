@@ -323,13 +323,44 @@ sequenceDiagram
 
 ### Set Up
 
-TODO: Verify with @avivka that we can keep using system-assigned identity and remove the manged option and the roles setup.
+The AzureML Compute Cluster uses a **system-assigned managed identity** to access Key Vault secrets and storage at runtime. Assign the following RBAC roles to the compute cluster's system-assigned identity:
 
-- Add to the Workspace Compute Identity (Systsem-assigned or User_assigned) the following RBAC:
-Key-Vault
-Storage account
-- Create keyvault secret containing the JFrog access token and username
-   ``` az keyvault secret set --vault-name <key vault name> --name artifactory-access-token-secret --value '{"access_token":"<ACCESS TOKEN>","username":"<USERNAME>"}' ```
+- **Key Vault Secrets User** on the AzureML workspace Key Vault — allows the compute to retrieve JFrog credentials during training/deployment jobs.
+- **Storage Blob Data Contributor** on the workspace Storage Account — allows the compute to read/write data used by training pipelines.
+
+For more information, see [Assign Azure roles using Azure CLI](https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-cli).
+
+```bash
+# Get the compute cluster's principal ID
+COMPUTE_PRINCIPAL_ID=$(az ml compute show \
+  --name <compute-cluster-name> \
+  --resource-group <resource-group> \
+  --workspace-name <workspace-name> \
+  --query "identity.principal_id" -o tsv)
+
+# Assign Key Vault Secrets User role
+az role assignment create \
+  --assignee-object-id "$COMPUTE_PRINCIPAL_ID" \
+  --assignee-principal-type ServicePrincipal \
+  --role "Key Vault Secrets User" \
+  --scope "/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.KeyVault/vaults/<key-vault-name>"
+
+# Assign Storage Blob Data Contributor role
+az role assignment create \
+  --assignee-object-id "$COMPUTE_PRINCIPAL_ID" \
+  --assignee-principal-type ServicePrincipal \
+  --role "Storage Blob Data Contributor" \
+  --scope "/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.Storage/storageAccounts/<storage-account-name>"
+```
+
+- Create a Key Vault secret containing the JFrog access token and username. For more information, see [Quickstart: Set and retrieve a secret from Azure Key Vault using Azure CLI](https://learn.microsoft.com/en-us/azure/key-vault/secrets/quick-create-cli).
+
+```bash
+az keyvault secret set \
+  --vault-name <key-vault-name> \
+  --name artifactory-access-token-secret \
+  --value '{"access_token":"<ACCESS TOKEN>","username":"<USERNAME>"}'
+```
 
 ### JFrog Setup (R&R: JFrog Administrator or Project Admin)
 
@@ -482,17 +513,274 @@ az rest --method PATCH \
 
 ### Set Up
 
-** TODO: @AvivK Add the manual instractiones to create Azure Function App
+#### 2a. Create AzureML Workspace with VNet
 
-- How to build AzureML Workspace + Vnet etc (R&R: Azure Administrator)
+Create the AzureML Workspace and its dependent resources. For detailed guidance, see [Create workspaces with Azure CLI](https://learn.microsoft.com/en-us/azure/machine-learning/how-to-manage-workspace-cli?view=azureml-api-2).
+
+**Create a Resource Group:**
+
+```bash
+RESOURCE_GROUP="<your-resource-group>"
+LOCATION="swedencentral"
+
+az group create --name $RESOURCE_GROUP --location $LOCATION
+```
+
+**Create a Virtual Network with two subnets:**
+
+Subnet 1 is used for service endpoints and Function App VNet integration. Subnet 2 is used for the AzureML workspace private endpoint. For more information, see [Create a virtual network using Azure CLI](https://learn.microsoft.com/en-us/azure/virtual-network/manage-virtual-network#create-a-virtual-network).
+
+```bash
+VNET_NAME="<your-vnet-name>"
+
+# Create VNet
+az network vnet create \
+  --name $VNET_NAME \
+  --resource-group $RESOURCE_GROUP \
+  --location $LOCATION \
+  --address-prefix 10.0.0.0/16
+
+# Create Subnet 1 — service endpoints + Function App delegation
+az network vnet subnet create \
+  --name subnet-1 \
+  --resource-group $RESOURCE_GROUP \
+  --vnet-name $VNET_NAME \
+  --address-prefix 10.0.0.0/24 \
+  --service-endpoints Microsoft.KeyVault Microsoft.Storage \
+  --delegations Microsoft.App/environments
+
+# Create Subnet 2 — workspace private endpoint
+az network vnet subnet create \
+  --name subnet-2 \
+  --resource-group $RESOURCE_GROUP \
+  --vnet-name $VNET_NAME \
+  --address-prefix 10.0.1.0/24
+```
+
+**Create a Key Vault (RBAC-enabled):**
+
+For more information, see [Create a Key Vault using Azure CLI](https://learn.microsoft.com/en-us/azure/key-vault/general/quick-create-cli).
+
+```bash
+KEY_VAULT_NAME="<your-key-vault-name>"
+
+az keyvault create \
+  --name $KEY_VAULT_NAME \
+  --resource-group $RESOURCE_GROUP \
+  --location $LOCATION \
+  --enable-rbac-authorization true \
+  --enable-purge-protection true
+```
+
+**Create a Storage Account:**
+
+For more information, see [Create a storage account using Azure CLI](https://learn.microsoft.com/en-us/azure/storage/common/storage-account-create?tabs=azure-cli).
+
+```bash
+STORAGE_ACCOUNT_NAME="<your-storage-account-name>"
+
+az storage account create \
+  --name $STORAGE_ACCOUNT_NAME \
+  --resource-group $RESOURCE_GROUP \
+  --location $LOCATION \
+  --sku Standard_LRS \
+  --kind StorageV2
+```
+
+**Create the AzureML Workspace:**
+
+```bash
+WORKSPACE_NAME="<your-workspace-name>"
+
+az ml workspace create \
+  --name $WORKSPACE_NAME \
+  --resource-group $RESOURCE_GROUP \
+  --location $LOCATION \
+  --storage-account $STORAGE_ACCOUNT_NAME \
+  --key-vault $KEY_VAULT_NAME
+```
+
+**RBAC — workspace and Key Vault:**
+
 - In the Azure Machine Learning workspace IAM add **Contributor** Role to the relevant users or Identities.
-- In the Azure Key Vault IAM add **Key Vault Administrator** Role to enable one time secret creation to the relevant users or Identities.
-- create keyvault secret containing the JFrog access token and username
-   ``` az keyvault secret set --vault-name <key vault name> --name artifactory-access-token-secret --value '{"access_token":"<ACCESS TOKEN>","username":"<USERNAME>"}' ```
+- In the Azure Key Vault IAM add **Key Vault Administrator** Role to enable one-time secret creation to the relevant users or Identities.
+
+For more information, see [Assign Azure roles using Azure CLI](https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-cli).
+
+**Create the initial Key Vault secret:**
+
+For more information, see [Quickstart: Set and retrieve a secret from Azure Key Vault using Azure CLI](https://learn.microsoft.com/en-us/azure/key-vault/secrets/quick-create-cli).
+
+```bash
+az keyvault secret set \
+  --vault-name $KEY_VAULT_NAME \
+  --name artifactory-access-token-secret \
+  --value '{"access_token":"<ACCESS TOKEN>","username":"<USERNAME>"}'
+```
+
+---
+
+#### 2b. Create the Azure Function App for Token Rotation
+
+The Function App performs automatic OIDC-based token exchange with JFrog Artifactory and stores the resulting short-lived access token in Key Vault.
+
+For detailed guidance, see [Create and manage function apps in a Flex Consumption plan](https://learn.microsoft.com/en-us/azure/azure-functions/flex-consumption-how-to).
+
+**Create a blob container for the function deployment artifacts:**
+
+```bash
+az storage container create \
+  --name azure-function-token-rotation \
+  --account-name $STORAGE_ACCOUNT_NAME \
+  --auth-mode login
+```
+
+**Create the Function App (Flex Consumption):**
+
+For more information, see [Create a function in Azure from the command line](https://learn.microsoft.com/en-us/azure/azure-functions/how-to-create-function-azure-cli).
+
+```bash
+FUNCTION_APP_NAME="<your-function-app-name>"
+
+az functionapp create \
+  --name $FUNCTION_APP_NAME \
+  --resource-group $RESOURCE_GROUP \
+  --storage-account $STORAGE_ACCOUNT_NAME \
+  --flexconsumption-location $LOCATION \
+  --runtime python \
+  --runtime-version 3.13 \
+  --functions-version 4
+```
+
+**Enable system-assigned managed identity:**
+
+For more information, see [Managed identities for App Service and Azure Functions](https://learn.microsoft.com/en-us/azure/app-service/overview-managed-identity).
+
+```bash
+FUNCTION_PRINCIPAL_ID=$(az functionapp identity assign \
+  --name $FUNCTION_APP_NAME \
+  --resource-group $RESOURCE_GROUP \
+  --query "principalId" -o tsv)
+
+echo "Function App Principal ID: $FUNCTION_PRINCIPAL_ID"
+```
+
+**Configure VNet integration (recommended):**
+
+```bash
+SUBNET_ID=$(az network vnet subnet show \
+  --name subnet-1 \
+  --resource-group $RESOURCE_GROUP \
+  --vnet-name $VNET_NAME \
+  --query "id" -o tsv)
+
+az functionapp vnet-integration add \
+  --name $FUNCTION_APP_NAME \
+  --resource-group $RESOURCE_GROUP \
+  --vnet $VNET_NAME \
+  --subnet subnet-1
+```
+
+**Assign RBAC roles to the Function App managed identity:**
+
+The function needs to read and write Key Vault secrets (for token rotation) and access storage (for Flex Consumption runtime). For more information, see [Assign Azure roles using Azure CLI](https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-cli).
+
+```bash
+# Key Vault Secrets Officer — read/write secrets for token rotation
+az role assignment create \
+  --assignee-object-id "$FUNCTION_PRINCIPAL_ID" \
+  --assignee-principal-type ServicePrincipal \
+  --role "Key Vault Secrets Officer" \
+  --scope "/subscriptions/<subscription-id>/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.KeyVault/vaults/$KEY_VAULT_NAME"
+
+# Storage Blob Data Owner — Flex Consumption deployment container
+az role assignment create \
+  --assignee-object-id "$FUNCTION_PRINCIPAL_ID" \
+  --assignee-principal-type ServicePrincipal \
+  --role "Storage Blob Data Owner" \
+  --scope "/subscriptions/<subscription-id>/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.Storage/storageAccounts/$STORAGE_ACCOUNT_NAME"
+
+# Storage Account Contributor — Flex Consumption runtime operations
+az role assignment create \
+  --assignee-object-id "$FUNCTION_PRINCIPAL_ID" \
+  --assignee-principal-type ServicePrincipal \
+  --role "Storage Account Contributor" \
+  --scope "/subscriptions/<subscription-id>/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.Storage/storageAccounts/$STORAGE_ACCOUNT_NAME"
+```
+
+**Configure Function App settings:**
+
+These environment variables control the token rotation behavior. For more information, see [Configure function app settings](https://learn.microsoft.com/en-us/azure/azure-functions/functions-how-to-use-azure-function-app-settings).
+
+```bash
+az functionapp config appsettings set \
+  --name $FUNCTION_APP_NAME \
+  --resource-group $RESOURCE_GROUP \
+  --settings \
+    KEY_VAULT_NAME="$KEY_VAULT_NAME" \
+    ARTIFACTORY_URL="https://<your-jfrog-instance>.jfrog.io" \
+    JFROG_OIDC_PROVIDER_NAME="<oidc-provider-name>" \
+    AZURE_AD_TOKEN_AUDIENCE="<azure-app-client-id>" \
+    ARTIFACTORY_TOKEN_SECRET_NAME="artifactory-access-token-secret" \
+    SECRET_TTL="21600" \
+    AzureWebJobsStorage__accountName="$STORAGE_ACCOUNT_NAME"
+```
+
+| Setting | Description |
+|---------|-------------|
+| `KEY_VAULT_NAME` | Name of the AzureML workspace Key Vault |
+| `ARTIFACTORY_URL` | Base URL of your JFrog platform (e.g. `https://myorg.jfrog.io`) |
+| `JFROG_OIDC_PROVIDER_NAME` | Name of the OIDC provider configured in JFrog (created in [step 6](#6-jfrog-artifactory-oidc-configuration-rr-jfrog-administrator-or-project-admin)) |
+| `AZURE_AD_TOKEN_AUDIENCE` | Azure Entra ID App Registration Client ID (from [step 1](#create-azure-entra-id-app-registration)) |
+| `ARTIFACTORY_TOKEN_SECRET_NAME` | Key Vault secret name where the rotated token is stored |
+| `SECRET_TTL` | Token time-to-live in seconds (default: `21600` = 6 hours) |
+
+---
+
+#### 2c. Deploy the Function Code
+
+Package and deploy the token rotation function to the Function App. For more information, see [Zip push deployment for Azure Functions](https://learn.microsoft.com/en-us/azure/azure-functions/deployment-zip-push).
+
+```bash
+# Create deployment package
+cd 2_secret_rotation_function
+zip -r function_app.zip . \
+  -x "terraform/*" "__pycache__/*" ".venv/*" "*.pyc" \
+     ".pytest_cache/*" "local.settings.json" ".env"
+
+# Deploy to Azure
+az functionapp deployment source config-zip \
+  --resource-group $RESOURCE_GROUP \
+  --name $FUNCTION_APP_NAME \
+  --src function_app.zip \
+  --build-remote true \
+  --timeout 600
+
+# Clean up
+rm function_app.zip
+cd -
+```
+
+**Invoke the function once** to perform the initial token rotation (otherwise the Key Vault secret is only updated on the next timer invocation):
+
+```bash
+MASTER_KEY=$(az functionapp keys list \
+  --resource-group $RESOURCE_GROUP \
+  --name $FUNCTION_APP_NAME \
+  --query "masterKey" -o tsv)
+
+FUNCTION_URL="https://${FUNCTION_APP_NAME}.azurewebsites.net"
+
+curl -s -X POST "$FUNCTION_URL/api/KeyVaultSecretRotation" \
+  -H "x-functions-key: $MASTER_KEY" \
+  -H "Content-Type: application/json"
+```
+
+A `200` response with `{"status": "ok", ...}` confirms the rotation is working. In case of any error or failure, see [Azure Function App troubleshooting documentation](https://learn.microsoft.com/en-us/troubleshoot/azure/azure-functions/welcome-azure-functions).
 
 > **Important:** Save these values for later use:
 >
-> - `Function App Enterprise Application Object ID`  (also call `function_app_identity_principal_id`)
+> - `Function App Enterprise Application Object ID`  (also called `function_app_identity_principal_id`) — this is the `$FUNCTION_PRINCIPAL_ID` value from the identity assignment step above
 
 ---
 
