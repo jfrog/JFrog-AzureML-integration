@@ -102,7 +102,7 @@ terraform plan -destroy
 terraform destroy
 ```
 
-**In case the destroy faild**, Check if there is **Smart detector alert rule** in the Azure Resource Group, If so remove it manually and re-run:
+**In case the destroy failed**, check if there is a **Smart detector alert rule** in the Azure Resource Group. If so, remove it manually and re-run:
 
 ```bash
 terraform destroy

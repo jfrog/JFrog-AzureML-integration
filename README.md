@@ -6,8 +6,8 @@ It focuses on secure credential handling, repeatable builds, and predictable pro
 What’s inside:
 
 - Opinionated Docker build that pulls base images and Python packages from Artifactory.
-- AzureML training pipeline example that runs a sample training script producing a trained Iris model in a managed compute cluster (serverless)
-- `frogml` JFrog SDK is used for working with Machine Learning models and datasets packages
+- AzureML training pipeline example that runs a sample training script producing a trained Iris model in a managed compute cluster (serverless).
+- `frogml` JFrog SDK is used for working with Machine Learning models and datasets packages.
 
 ## Train Architecture
 
@@ -139,42 +139,42 @@ graph TB
   - Mounts `pip.conf` as a Docker secret for secure credential handling
   - Uses base image from JFrog Artifactory (e.g. `python:3.13.11-slim` from Artifactory Docker registry)
   - Installs Python packages from Artifactory PyPI repository during build
-  - Creates multi-stage Docker image with optimized layers and pushes it to JFrog docker registry
-   Result: Image is ready for use in AzureML pipelines! 
-   *At this point, the image will potentially be scanned by JFrog Xray and undergo the customer's SDLC pipeline
+  - Creates multi-stage Docker image with optimized layers and pushes it to JFrog Docker registry
+  - Result: Image is ready for use in AzureML pipelines!
+  - *At this point, the image will potentially be scanned by JFrog Xray and undergo the customer's SDLC pipeline.*
 
 #### Train Runtime Phase
 
 1. **Train Pipeline:**
-  - A Developer or a CI job runs the Pipeline script 
-  - The Pipeline script submits a training job to AzureML workspace
-  - The AzureML workspace Creates a compute cluster and runs the training job on it
+  - A developer or a CI job runs the pipeline script
+  - The pipeline script submits a training job to AzureML workspace
+  - The AzureML workspace creates a compute cluster and runs the training job on it
   - AzureML compute cluster:
-    - Retrieves JFrog short lived credentials from AzureML Workspace Key Vault
+    - Retrieves JFrog short-lived credentials from AzureML Workspace Key Vault
     - Pulls the training image from Artifactory Docker registry
     - Runs the training image
   - The training container executes the training script (`train.py`)
 2. **Model Training & Upload:**
   - Training script trains ML model (e.g. Iris classifier)
   - Model artifacts are generated (model.pkl, metrics.json, metadata.json)
-  - `ArtifactoryHelper` class retrieves JFrog short lived credentials from AzureML Workspace Key Vault
+  - `ArtifactoryHelper` class retrieves JFrog short-lived credentials from AzureML Workspace Key Vault
   - [optional] Model is uploaded to Artifactory ML Repository using `frogml` package
 
 #### Deployment & Inference Phase
 
 1. **Deployment Pipeline:**
-  - A Developer or a CI job runs the deployment_pipeline script, which is responsible for retrieving JFrog short lived credentials from AzureML Workspace Key Vault
-  - The Pipeline script submits a deployment job to AzureML workspace
-  - The AzureML workspace Creates/Uses an existing compute cluster and runs the training job on it (in this example we reuse the existing compute cluster)
+  - A developer or a CI job runs the deployment_pipeline script, which is responsible for retrieving JFrog short-lived credentials from AzureML Workspace Key Vault
+  - The pipeline script submits a deployment job to AzureML workspace
+  - The AzureML workspace creates or uses an existing compute cluster and runs the training job on it (in this example we reuse the existing compute cluster)
   - AzureML compute cluster:        
     - Pulls the trained model image from Artifactory Docker registry (using the previously retrieved credentials)
   - The trained model container:
-    - Retrieves JFrog short lived credentials from AzureML Workspace Key Vault
+    - Retrieves JFrog short-lived credentials from AzureML Workspace Key Vault
     - Downloads the model
     - Runs the model
     - Performs inference test calls (`model.predict(...)`)
 
-**Important**: This deployment example is ephemeral, once inference test calls are done, container completes and as min_nodes is set to 0, within few minutes the inference is removed   
+**Important**: This deployment example is ephemeral. Once inference test calls are done, the container completes and, as min_nodes is set to 0, within a few minutes the inference is removed.
 
 #### Authentication & Security
 
@@ -182,12 +182,12 @@ graph TB
   - Stores Artifactory Access Token and Username securely
 2. **Authentication Methods:**
   - **Local Development:** Uses Azure user or application registry credentials (e.g. az login)
-  - **AzureML Runtime:** Uses Managed Identity (automatic, no credentials needed) for retrieveing JFrog access token from the AzureML Workspace Key Vault  
+  - **AzureML Runtime:** Uses Managed Identity (automatic, no credentials needed) for retrieving JFrog access token from the AzureML Workspace Key Vault
   - **Docker Build:** Uses Docker secrets (credentials not stored in image)
 
 #### Advanced Authentication: JFrog token auto-rotation
 
-For more advanced security setup, a JFrog short lived Access Token can be added and rotated automatically through an Azure function based on OIDC token exchange protocol.
+For a more advanced security setup, a JFrog short-lived Access Token can be added and rotated automatically through an Azure Function based on the OIDC token exchange protocol.
 For this setup, see the optional Terraform and function under 
 [Advanced Setup (with automatic secret rotation)](#advanced-setup-with-automatic-secret-rotation).
 
@@ -195,7 +195,7 @@ For this setup, see the optional Terraform and function under
 
 #### JFrog Repositories Used
 
-- **Docker Registry:** Stores and serves Docker images, preferably use a virtual docker repository to simplify usage
+- **Docker Registry:** Stores and serves Docker images; preferably use a virtual Docker repository to simplify usage
 - **PyPI Remote/Virtual Repository:** Proxies Python packages used by the training scripts
 - **ML Repository:** Stores trained ML models with versioning
 - **HuggingFace Repository:** Proxies HF packages used by the training script
@@ -210,7 +210,7 @@ For this setup, see the optional Terraform and function under
 
 #### Authentication
 
-- **JFrog Credentials:** The authentication is based on JFrog access token stored on Azure Key Vault, with an optional setup of an Azure function for rotating this access token automatically based on OIDC token exchange protocol
+- **JFrog Credentials:** The authentication is based on a JFrog access token stored in Azure Key Vault, with an optional setup of an Azure Function for rotating this access token automatically based on the OIDC token exchange protocol
 
 ### Sequence Diagram
 
@@ -292,16 +292,16 @@ sequenceDiagram
 
 #### Docker Build Process
 
-- **Multi-stage build** This example uses a multi staged docker build for optimized image size.
-- **Docker secrets** Using a docker secret for allowing the access into the JFrog private registry allows for a secure credential passing (pip.conf) without the secret leaving traces on the created image.
-- **Artifactory base image** Using a base image pulled from the JFrog Docker registry assures security protection for used images i.e. Xray and Curation.
-- **Package installation** Python packages are pulled through Artifactory PyPI repository during build for security and control reasons, providing protections against harmfull external dependencies.
+- **Multi-stage build:** This example uses a multi-stage Docker build for optimized image size.
+- **Docker secrets:** Using a Docker secret for allowing the access into the JFrog private registry allows for a secure credential handling (pip.conf) without the secret leaving traces on the created image.
+- **Artifactory base image:** Using a base image pulled from the JFrog Docker registry ensures security protection for used images, i.e. Xray and Curation.
+- **Package installation:** Python packages are pulled through Artifactory PyPI repository during build for security and control reasons, providing protection against harmful external dependencies.
 
 #### AzureML Training Pipeline
 
-- **Environment:** Using a Custom Docker image from Artifactory allows for tracability, management and repeatability of the training process along with security protections as described above.
-- **Compute:** AzureML compute cluster with Managed Identity allows for passwordless and seameless operation of the training process when working with Azure and with JFrog services.
-- **Outputs:** Model files, metrics, and metadata produced by the training process allows deep analytics and understanding of the training process for evaluating the resulting models.
+- **Environment:** Using a custom Docker image from Artifactory allows for traceability, management, and repeatability of the training process along with security protections as described above.
+- **Compute:** AzureML compute cluster with Managed Identity allows for passwordless and seamless operation of the training process when working with Azure and with JFrog services.
+- **Outputs:** Model files, metrics, and metadata produced by the training process allow deep analytics and understanding of the training process for evaluating the resulting models.
 
 #### Security Model
 
@@ -309,16 +309,16 @@ sequenceDiagram
 - **Runtime:** Azure Key Vault + Managed Identity (no hardcoded secrets)
 - **Network:** All communications over HTTPS
 - **Access Control:** Role-based access via Azure and Artifactory
-- **Used Credentials:** JFrog access token stored on Azure Key Vault, with an optional enhanced setup allowing for auto-rotated access tokens managed by Azure function. with token rotation based on OIDC and Azure App. registration & Managed Identity (see advanced setup under secret_rotation_function sub folder)
+- **Used Credentials:** JFrog access token stored in Azure Key Vault, with an optional enhanced setup allowing for auto-rotated access tokens managed by an Azure Function, with token rotation based on OIDC and Azure App Registration & Managed Identity (see advanced setup under secret_rotation_function sub folder)
 
 ## Quick Start (Bring Your Own Workspace)
 
-### Intiliaze Setup Environment (R&R: Azure Administrator)
+### Initialize Setup Environment (R&R: Azure Administrator)
 
 ### Prerequisites
 
 - AzureML Workspace (R&R: Azure Administrator)
-- In the Azure Machine Learning workspace Resource add Contributor role to the relevant users or Identities.
+- In the Azure Machine Learning workspace resource, add Contributor role to the relevant users or identities.
 - Artifactory Access Token and Username
 
 ### Set Up
@@ -353,7 +353,7 @@ az role assignment create \
   --scope "/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.Storage/storageAccounts/<storage-account-name>"
 ```
 
-- In the Azure Key Vault IAM add **Key Vault Administrator** Role to the relevant users or Identities to enable one-time secret creation. For more information, see [Assign Azure roles using Azure CLI](https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-cli).
+- In the Azure Key Vault IAM, add **Key Vault Administrator** role to the relevant users or identities to enable one-time secret creation. For more information, see [Assign Azure roles using Azure CLI](https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-cli).
 - Create a Key Vault secret containing the JFrog access token and username. For more information, see [Quickstart: Set and retrieve a secret from Azure Key Vault using Azure CLI](https://learn.microsoft.com/en-us/azure/key-vault/secrets/quick-create-cli).
 
 ```bash
@@ -367,18 +367,18 @@ az keyvault secret set \
 
 ### Prerequisites
 
-- JFrog Pypi remote repository
-- JFrog Docker Virtual, Local and Remote repositories
+- JFrog PyPI remote repository
+- JFrog Docker virtual, local, and remote repositories
 - JFrog Machine Learning Repository
 
-### Configure training (R&R: ML Engineer)
+### Configure Training (R&R: ML Engineer)
 
 ### Prerequisites
 
 - Python >= 3.11
-- Create pip.conf pointing to you JFrog platform. (See pip.example.conf for referance)
+- Create pip.conf pointing to your JFrog platform (see pip.example.conf for reference)
 - Azure CLI configured
-- Login to Azure account. e.g.`az login --tenant <Tenant id>`, or any other preferd method.
+- Login to Azure account, e.g. `az login --tenant <Tenant id>`, or any other preferred method.
 - Ensure Docker BuildKit is enabled for secret support: `export DOCKER_BUILDKIT=1`
 
 ### 1. Set Up Python virtual environment
@@ -389,9 +389,9 @@ export PIP_CONFIG_FILE=<pip.conf file you want to use>
 source setup_venv.sh
 ```
 
-### 2. Build, Tag and Push Docker Image
+### 2. Build, Tag, and Push Docker Image
 
-This step builts the training image, you can use the example as-is or replace its training logic on `src/train.py` script.
+This step builds the training image. You can use the example as-is or replace its training logic in the `src/train.py` script.
 
 Build the Docker image with the specified tag. The build uses Docker secrets for secure pip configuration:
 
@@ -414,7 +414,7 @@ docker build \
 
 ### 3. Run Training Pipeline
 
-This step creats a new training job inside the AzureML workspace and runs it. the job uses the training docker container we built and pushed in the previous steps.
+This step creates a new training job inside the AzureML workspace and runs it. The job uses the training Docker container we built and pushed in the previous steps.
 
 - Clone config/config.example.yaml into config/config.yaml and update the missing 'PLACEHOLDER' values
 
@@ -429,7 +429,7 @@ Submit the training pipeline:
     python pipeline/training_pipeline.py
 ```
 
-Once the training pipeline completes you will get a URL for the Azure ML job it created, use that to open the training job and follow its progress.
+Once the training pipeline completes, you will get a URL for the Azure ML job it created. Use that to open the training job and follow its progress.
 
 Deployment (with specific version):
 
@@ -504,7 +504,7 @@ az rest --method PATCH \
 
 ---
 
-### 2. Setup AzureML Workspace and Azure Function for Token rotation (R&R: Azure Administrator)
+### 2. Set Up AzureML Workspace and Azure Function for Token Rotation (R&R: Azure Administrator)
 
 ### Option 1 - Manual
 
@@ -622,8 +622,8 @@ az rest --method PATCH \
 
 **RBAC — workspace and Key Vault:**
 
-- In the Azure Machine Learning workspace IAM add **Contributor** Role to the relevant users or Identities.
-- In the Azure Key Vault IAM add **Key Vault Administrator** Role to enable one-time secret creation to the relevant users or Identities.
+- In the Azure Machine Learning workspace IAM, add **Contributor** role to the relevant users or identities.
+- In the Azure Key Vault IAM, add **Key Vault Administrator** role to enable one-time secret creation for the relevant users or identities.
 
 For more information, see [Assign Azure roles using Azure CLI](https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-cli).
 
@@ -843,7 +843,7 @@ A `200` response with `{"status": "ok", ...}` confirms the rotation is working. 
 
 > **Important:** Save these values for later use:
 >
-> - `Function App Enterprise Application Object ID`  (also called `function_app_identity_principal_id`) — this is the `$FUNCTION_PRINCIPAL_ID` value from the identity assignment step above
+> - `Function App Enterprise Application Object ID` (also called `function_app_identity_principal_id`) — this is the `$FUNCTION_PRINCIPAL_ID` value from the identity assignment step above
 
 ---
 
@@ -863,7 +863,7 @@ A `200` response with `{"status": "ok", ...}` confirms the rotation is working. 
   
   This creates the workspace, VNet, subnets, Key Vault, storage, compute, and a **private endpoint** for the workspace in subnet 2.
 
-#### Create Azure Function App for Token rotation
+#### Create Azure Function App for Token Rotation
 
 ### Prerequisites
 
@@ -881,10 +881,10 @@ Federated credentials allow the Function App managed identity to exchange tokens
 
 For more information, see the [Azure Managed Identities documentation](https://learn.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/).
 
-### Prerquiste
+### Prerequisites
 
 ```bash
-APP_CLIENT_ID=<Entra ID App Registry client id> #(also called `azure_app_client_id`)
+APP_CLIENT_ID=<Entra ID App Registration client ID> #(also called `azure_app_client_id`)
 TENANT_ID=<tenant id> #(also called `azure_tenant_id`)
 FUNCTION_APP_NAME="<your-function-app-name>" #e.g. artifactory-token-rotation
 RESOURCE_GROUP="<your-resource-group>"
@@ -959,7 +959,7 @@ az rest --method PATCH \
   --body '{"appRoleAssignmentRequired": true}'
 ```
 
-After enabling this, the credential provider will fail to obtain tokens because the Function App own service principal is not assigned. To fix this, assign the Function App service principal to the Application Registry service principle by creating an app role and assigning it:
+After enabling this, the credential provider will fail to obtain tokens because the Function App's own service principal is not assigned. To fix this, assign the Function App service principal to the App Registration service principal by creating an app role and assigning it:
 
 **1. Create an App Role**
 
@@ -1008,7 +1008,7 @@ PRINCIPAL_ID=$(az functionapp identity show \
   -o tsv)
 ```
 
-**4. Assign the Function App Managed Identity to Entra ID App registration prinsiple id**
+**4. Assign the Function App Managed Identity to Entra ID App Registration principal ID**
 
 ```bash
 az rest --method POST \
@@ -1031,12 +1031,12 @@ Configure JFrog Artifactory to accept OIDC tokens from Azure. This involves crea
 
 For more information, see the [JFrog Artifactory OIDC Documentation](https://www.jfrog.com/confluence/display/JFROG/Access+Tokens#AccessTokens-OIDCIntegration).
 
-### Prerquasit
-
-`$TENANT_ID` #Azure tenant id
-`$APP_CLIENT_ID` #Entra ID App registration client id
-`$PRINCIPAL_ID` #Principal ID of the Caller (Function App Managed Identity)
-``
+### Prerequisites
+```bash
+TENANT_ID=<tenant id> #(also called `azure_tenant_id`)
+$APP_CLIENT_ID=<Entra ID App Registration client ID> #(also called `azure_app_client_id`)
+$PRINCIPAL_ID #Principal ID of the caller (Function App Managed Identity)
+```
 
 #### Get Artifactory Admin Token
 
@@ -1046,7 +1046,7 @@ You'll need an Artifactory admin access token to configure OIDC. If you don't ha
 # Set your Artifactory details
 ARTIFACTORY_URL="your-instance.jfrog.io"
 ARTIFACTORY_ADMIN_TOKEN="your-admin-access-token"
-ARTIFACTORY_USER="azure-aks-user"  # User that will be mapped to OIDC tokens
+ARTIFACTORY_USER="azure-ml-user"  # User that will be mapped to OIDC tokens
 OIDC_PROVIDER_NAME="azure-ml-oidc-provider"  # Choose a name
 ```
 
@@ -1073,7 +1073,7 @@ For more details, see the [JFrog REST API documentation for creating OIDC config
 
 The identity mapping tells Artifactory how to map Azure OIDC tokens to Artifactory users.
 
-> **Important:** The default is **6 hours ( 21600 seconds)**. The example below uses 21600 seconds to verify the  token is revocable. 
+> **Important:** The default is **6 hours (21600 seconds)**. The example below uses 21600 seconds to verify the token is revocable.
 
 For more details, see the [JFrog Revocable Expiry Threshold](https://jfrog.com/help/r/jfrog-platform-administration-documentation/use-the-revocable-and-persistency-thresholds).
 
@@ -1132,10 +1132,11 @@ cd 2_secret_rotation_function/terraform
 ./deploy-function.sh
 ```
 
-#### The script deploys the function and then **invokes it once** so the Key Vault secret is updated immediately with a real Artifactory access token (otherwise the token would only be refreshed on the next timer invocation). In case of any error or failure please see [Azure Function App troubleshooting documentation](https://learn.microsoft.com/en-us/troubleshoot/azure/azure-functions/welcome-azure-functions)
+#### The script deploys the function and then **invokes it once** so the Key Vault secret is updated immediately with a real Artifactory access token (otherwise the token would only be refreshed on the next timer invocation). In case of any error or failure, please see [Azure Function App troubleshooting documentation](https://learn.microsoft.com/en-us/troubleshoot/azure/azure-functions/welcome-azure-functions).
+
 ---
 
-### 8. You are ready to setup the AzureML and JFrog development environment
+### 8. You are ready to set up the AzureML and JFrog development environment
 
 See: [JFrog Setup (R&R: JFrog Administrator or Project Admin)](#jfrog-setup-rr-jfrog-administrator-or-project-admin)
 
