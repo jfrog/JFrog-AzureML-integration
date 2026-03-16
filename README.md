@@ -353,6 +353,7 @@ az role assignment create \
   --scope "/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.Storage/storageAccounts/<storage-account-name>"
 ```
 
+- In the Azure Key Vault IAM add **Key Vault Administrator** Role to the relevant users or Identities to enable one-time secret creation. For more information, see [Assign Azure roles using Azure CLI](https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-cli).
 - Create a Key Vault secret containing the JFrog access token and username. For more information, see [Quickstart: Set and retrieve a secret from Azure Key Vault using Azure CLI](https://learn.microsoft.com/en-us/azure/key-vault/secrets/quick-create-cli).
 
 ```bash
@@ -549,12 +550,13 @@ az network vnet subnet create \
   --service-endpoints Microsoft.KeyVault Microsoft.Storage \
   --delegations Microsoft.App/environments
 
-# Create Subnet 2 — workspace private endpoint
+# Create Subnet 2 — workspace private endpoint (disable network policies to allow PE creation)
 az network vnet subnet create \
   --name subnet-2 \
   --resource-group $RESOURCE_GROUP \
   --vnet-name $VNET_NAME \
-  --address-prefix 10.0.1.0/24
+  --address-prefix 10.0.1.0/24 \
+  --private-endpoint-network-policies Disabled
 ```
 
 **Create a Key Vault (RBAC-enabled):**
@@ -598,6 +600,24 @@ az ml workspace create \
   --location $LOCATION \
   --storage-account $STORAGE_ACCOUNT_NAME \
   --key-vault $KEY_VAULT_NAME
+```
+
+**Restrict workspace inbound access to deployer IPs (recommended):**
+
+After creating the workspace and its private endpoint, restrict public network access to specific deployer IPs. The `ipAllowlist` property is only available via the REST API:
+
+```bash
+DEPLOYER_IPS='["<your-ip>", "<your-nat-ip>"]'
+
+WORKSPACE_ID=$(az ml workspace show \
+  --name $WORKSPACE_NAME \
+  --resource-group $RESOURCE_GROUP \
+  --query "id" -o tsv)
+
+az rest --method PATCH \
+  --uri "https://management.azure.com${WORKSPACE_ID}?api-version=2024-04-01-preview" \
+  --headers "Content-Type=application/json" \
+  --body "{\"properties\": {\"ipAllowlist\": $DEPLOYER_IPS}}"
 ```
 
 **RBAC — workspace and Key Vault:**
@@ -650,6 +670,35 @@ az functionapp create \
   --runtime python \
   --runtime-version 3.13 \
   --functions-version 4
+```
+
+**Restrict SCM (deployment) access to deployer IPs (recommended):**
+
+The main site stays open so the HTTP trigger remains callable, but the SCM endpoint (used for zip deployment) is restricted to deployer IPs only:
+
+```bash
+DEPLOYER_IP="<your-deployer-ip>/32"
+
+# Set SCM default action to Deny
+az functionapp config access-restriction set \
+  --name $FUNCTION_APP_NAME \
+  --resource-group $RESOURCE_GROUP \
+  --use-same-restrictions-for-scm-site false
+
+az functionapp config access-restriction add \
+  --name $FUNCTION_APP_NAME \
+  --resource-group $RESOURCE_GROUP \
+  --scm-site true \
+  --rule-name "deployer" \
+  --action Allow \
+  --ip-address "$DEPLOYER_IP" \
+  --priority 100
+
+az functionapp config access-restriction set \
+  --name $FUNCTION_APP_NAME \
+  --resource-group $RESOURCE_GROUP \
+  --scm-site true \
+  --default-action Deny
 ```
 
 **Enable system-assigned managed identity:**
@@ -708,6 +757,8 @@ az role assignment create \
   --scope "/subscriptions/<subscription-id>/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.Storage/storageAccounts/$STORAGE_ACCOUNT_NAME"
 ```
 
+## TODO: add the 2 remaining roles from keyvault.tf
+
 **Configure Function App settings:**
 
 These environment variables control the token rotation behavior. For more information, see [Configure function app settings](https://learn.microsoft.com/en-us/azure/azure-functions/functions-how-to-use-azure-function-app-settings).
@@ -726,6 +777,7 @@ az functionapp config appsettings set \
     AzureWebJobsStorage__accountName="$STORAGE_ACCOUNT_NAME"
 ```
 
+#todo match the prerequisits below - refer to 3 federated identity
 | Setting | Description |
 |---------|-------------|
 | `KEY_VAULT_NAME` | Name of the AzureML workspace Key Vault |
