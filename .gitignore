@@ -23,6 +23,7 @@ build/
 .github/
 config/config.yaml
 config/config.yaml.poc
+
 # Environment variables
 .env
 .env.local
@@ -53,6 +54,9 @@ Thumbs.db
 
 # Azure
 .azure/
+__azurite_db_blob_extent__.json
+__azurite_db_blob__.json
+__blobstorage__/AzuriteConfig
 
 # Jupyter
 .ipynb_checkpoints/
@@ -69,19 +73,9 @@ setup_env.sh
 downloaded_artifacts/*
 
 # Terraform
-secret_rotation_function/terraform.old/
-secret_rotation_function/terraform.old/terraform.tfvars
-secret_rotation_function/terraform.old/terraform.tfstate
-secret_rotation_function/terraform.old/terraform.tfstate.backup
-**/terraform/.terraform/
-**/terraform/.terraform.lock.hcl
-**/terraform/terraform.tfvars
-**/terraform/terraform.tfstate
-**/terraform/terraform.tfstate.backup
-secret_rotation_function/terraform/function_deploy.zip
-secret_rotation_function/deploy.zip
-
-# Azure
-__azurite_db_blob_extent__.json
-__azurite_db_blob__.json
-__blobstorage__/AzuriteConfig
+*/terraform/.terraform.tfstate.lock.info
+*/terraform/terraform.tfstate.backup
+*/terraform/.terraform/
+*/terraform/.terraform.lock.hcl
+*/terraform/terraform.tfvars
+*/terraform/terraform.tfstate
