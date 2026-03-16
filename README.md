@@ -860,6 +860,7 @@ A `200` response with `{"status": "ok", ...}` confirms the rotation is working. 
 ### Deploy
 
 - See [1_azure_machine_learning_workspace/README.md — Usage](1_azure_machine_learning_workspace/README.md#usage).
+  
   This creates the workspace, VNet, subnets, Key Vault, storage, compute, and a **private endpoint** for the workspace in subnet 2.
 
 #### Create Azure Function App for Token rotation
