@@ -827,15 +827,15 @@ cd -
 **Invoke the function once** to perform the initial token rotation (otherwise the Key Vault secret is only updated on the next timer invocation):
 
 ```bash
-MASTER_KEY=$(az functionapp keys list \
+FUNCTION_KEY=$(az functionapp keys list \
   --resource-group $RESOURCE_GROUP \
   --name $FUNCTION_APP_NAME \
-  --query "masterKey" -o tsv)
+  --query "functionKeys.default" -o tsv)
 
 FUNCTION_URL="https://${FUNCTION_APP_NAME}.azurewebsites.net"
 
 curl -s -X POST "$FUNCTION_URL/api/KeyVaultSecretRotation" \
-  -H "x-functions-key: $MASTER_KEY" \
+  -H "x-functions-key: $FUNCTION_KEY" \
   -H "Content-Type: application/json"
 ```
 
