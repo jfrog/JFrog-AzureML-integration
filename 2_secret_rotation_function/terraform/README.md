@@ -2,16 +2,19 @@
 
 This Terraform deploys the Azure Function **infrastructure** (app, plan, RBAC). It does **not** deploy the function code. Deploy the function code after apply — see **Post-install: Deploy function code** below.
 
-- **Existing** Azure ML workspace storage account (data source only)
-- **New** blob container in that account, used only by this function (not the container used by Azure ML pipelines)
-- **Existing** Azure ML workspace Key Vault (data source only)
-- Function app identity is granted **Storage Blob Data Contributor**, **Storage Table Data Contributor**, and **Storage Queue Data Contributor** on the existing storage account, and **Key Vault Secrets Officer** on the existing Key Vault
 
 ## Prerequisites (R&R: Azure Administrator)
 
-- Azure subscription and CLI logged in (`az login`)
+**Components that was created in Step 1 (1_azure_machine_learning_workspace)**
 - In the Azure Key Vault IAM add **Key Vault Administrator** Role to enable one time secret creation to the relevant users or Identities that deploy the Azure Function App.
 - Existing resource group, storage account, and Key Vault (from your Azure ML workspace)
+- Azure ML workspace storage account (data source only)
+- Blob container in that account, used only by this function (not the container used by Azure ML pipelines)
+- Azure ML workspace Key Vault (data source only)
+- Function app identity is granted **Storage Blob Data Contributor**, **Storage Table Data Contributor**, and **Storage Queue Data Contributor** on the existing storage account, and **Key Vault Secrets Officer** on the existing Key Vault
+
+**Additional prerequisites** 
+- Azure subscription and CLI logged in (`az login`)
 - Terraform >= 1.5.0
 
 ## Usage

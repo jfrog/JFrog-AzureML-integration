@@ -24,64 +24,58 @@ This module provisions the **Azure Machine Learning workspace** and supporting i
 ## Usage
 
 1. **Copy the example variables and set your values:**
-   ```bash
+  ```bash
    cd 1_azure_machine_learning_workspace/terraform
    cp terraform.tfvars.example terraform.tfvars
    # Edit terraform.tfvars: subscription_id, ip_rules (allowed IPs), and optionally location, prefix, environment, compute settings, tags.
-   ```
-
+  ```
 2. **Initialize and apply:**
-   ```bash
+  ```bash
    terraform init
    terraform plan
    terraform apply
-   ```
-
+  ```
 3. **Use outputs elsewhere** — After apply, you can pass these outputs into the secret rotation function as variables. The 2_secret_rotation_function Terraform expects (see [2_secret_rotation_function/terraform/README.md](../2_secret_rotation_function/terraform/README.md)):
-
-   **Variables you can supply from this module’s outputs (Option B in 2_ README):**
-   - `resource_group_name` ← `terraform output -raw resource_group_name`
-   - `key_vault_name` ← `terraform output -raw key_vault_name`
-   - `existing_storage_account_name` ← `terraform output -raw storage_account_name`
-   - `function_app_integration_subnet_id` ← `terraform output -raw subnet_id_1`
-
-   **Variables you must still set in 2_secret_rotation_function `terraform.tfvars`:**
-   - `subscription_id`
-   - `artifactory_url`
-   - `jfrog_oidc_provider_name`
-   - `azure_ad_token_audience`
-   - `deployer_ip_addresses`
-   - (Optional) `function_app_name`, `function_storage_container_name`
+  
+  - `resource_group_name` ← `terraform output -raw resource_group_name`
+  - `key_vault_name` ← `terraform output -raw key_vault_name`
+  - `existing_storage_account_name` ← `terraform output -raw storage_account_name`
+  - `function_app_integration_subnet_id` ← `terraform output -raw subnet_id_1`
+ 
 
 ## Main variables
 
-| Variable | Description | Default |
-|----------|-------------|--------|
-| `subscription_id` | Azure subscription ID | (required) |
-| `resource_group_location` | Region for the resource group | `"Sweden Central"` |
-| `resource_group_name_prefix` | Prefix for the resource group name | `"rg"` |
-| `environment` | Environment name (used in resource names) | `"dev"` |
-| `prefix` | Prefix for Key Vault and storage names | `"ml"` |
-| `ip_rules` | Allowed IPs for Key Vault and storage network rules | `["YOUR IP", "NAT IP"]` |
-| `compute_cluster_min_node_count` | Min nodes for the ML compute cluster | `0` |
-| `compute_cluster_max_node_count` | Max nodes for the ML compute cluster | `1` |
-| `compute_cluster_vm_priority` | `Dedicated` or `LowPriority` | `"Dedicated"` |
-| `compute_cluster_vm_size` | VM size for compute nodes | `"Standard_DS3_v2"` |
-| `tags` | Tags applied to all resources | (see `variables.tf`) |
+
+| Variable                         | Description                                         | Default                 |
+| -------------------------------- | --------------------------------------------------- | ----------------------- |
+| `subscription_id`                | Azure subscription ID                               | (required)              |
+| `resource_group_location`        | Region for the resource group                       | `"Sweden Central"`      |
+| `resource_group_name_prefix`     | Prefix for the resource group name                  | `"rg"`                  |
+| `environment`                    | Environment name (used in resource names)           | `"dev"`                 |
+| `prefix`                         | Prefix for Key Vault and storage names              | `"ml"`                  |
+| `ip_rules`                       | Allowed IPs for Key Vault and storage network rules | `["YOUR IP", "NAT IP"]` |
+| `compute_cluster_min_node_count` | Min nodes for the ML compute cluster                | `0`                     |
+| `compute_cluster_max_node_count` | Max nodes for the ML compute cluster                | `1`                     |
+| `compute_cluster_vm_priority`    | `Dedicated` or `LowPriority`                        | `"Dedicated"`           |
+| `compute_cluster_vm_size`        | VM size for compute nodes                           | `"Standard_DS3_v2"`     |
+| `tags`                           | Tags applied to all resources                       | (see `variables.tf`)    |
+
 
 ## Outputs
 
-| Output | Description |
-|--------|-------------|
-| `resource_group_name` | Name of the created resource group |
-| `virtual_network_name` | Name of the VNet |
-| `subnet_name_1` | Name of subnet 1 (Key Vault/Storage/service endpoints) |
-| `subnet_id_1` | Resource ID of subnet 1 (for function app VNet integration) |
-| `subnet_name_2` | Name of subnet 2 (workspace private endpoint) |
-| `key_vault_name` | Name of the workspace Key Vault |
-| `storage_account_name` | Name of the workspace storage account |
-| `machine_learning_workspace_name` | Name of the ML workspace |
-| `machine_learning_compute_cluster_name` | Name of the compute cluster |
+
+| Output                                  | Description                                                 |
+| --------------------------------------- | ----------------------------------------------------------- |
+| `resource_group_name`                   | Name of the created resource group                          |
+| `virtual_network_name`                  | Name of the VNet                                            |
+| `subnet_name_1`                         | Name of subnet 1 (Key Vault/Storage/service endpoints)      |
+| `subnet_id_1`                           | Resource ID of subnet 1 (for function app VNet integration) |
+| `subnet_name_2`                         | Name of subnet 2 (workspace private endpoint)               |
+| `key_vault_name`                        | Name of the workspace Key Vault                             |
+| `storage_account_name`                  | Name of the workspace storage account                       |
+| `machine_learning_workspace_name`       | Name of the ML workspace                                    |
+| `machine_learning_compute_cluster_name` | Name of the compute cluster                                 |
+
 
 These outputs are used by [2_secret_rotation_function](../2_secret_rotation_function) when applying with Option B (passing workspace outputs via `-var`).
 
@@ -109,6 +103,7 @@ terraform destroy
 ```
 
 **In case the destroy faild**, Check if there is **Smart detector alert rule** in the Azure Resource Group, If so remove it manually and re-run:
+
 ```bash
 terraform destroy
 ```
