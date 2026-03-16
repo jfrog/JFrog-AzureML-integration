@@ -755,9 +755,21 @@ az role assignment create \
   --assignee-principal-type ServicePrincipal \
   --role "Storage Account Contributor" \
   --scope "/subscriptions/<subscription-id>/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.Storage/storageAccounts/$STORAGE_ACCOUNT_NAME"
-```
 
-## TODO: add the 2 remaining roles from keyvault.tf
+# Storage Table Data Contributor — Flex Consumption host runtime (timer triggers, etc.)
+az role assignment create \
+  --assignee-object-id "$FUNCTION_PRINCIPAL_ID" \
+  --assignee-principal-type ServicePrincipal \
+  --role "Storage Table Data Contributor" \
+  --scope "/subscriptions/<subscription-id>/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.Storage/storageAccounts/$STORAGE_ACCOUNT_NAME"
+
+# Storage Queue Data Contributor — Flex Consumption host runtime (queue-based triggers)
+az role assignment create \
+  --assignee-object-id "$FUNCTION_PRINCIPAL_ID" \
+  --assignee-principal-type ServicePrincipal \
+  --role "Storage Queue Data Contributor" \
+  --scope "/subscriptions/<subscription-id>/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.Storage/storageAccounts/$STORAGE_ACCOUNT_NAME"
+```
 
 **Configure Function App settings:**
 
@@ -777,7 +789,6 @@ az functionapp config appsettings set \
     AzureWebJobsStorage__accountName="$STORAGE_ACCOUNT_NAME"
 ```
 
-#todo match the prerequisits below - refer to 3 federated identity
 | Setting | Description |
 |---------|-------------|
 | `KEY_VAULT_NAME` | Name of the AzureML workspace Key Vault |
@@ -848,7 +859,8 @@ A `200` response with `{"status": "ok", ...}` confirms the rotation is working. 
 
 ### Deploy
 
-- See [1_azure_machine_learning_workspace/README.md — Usage](1_azure_machine_learning_workspace/README.md#usage). This creates the workspace, VNet, subnets, Key Vault, storage, compute, and a **private endpoint** for the workspace in subnet 2.
+- See [1_azure_machine_learning_workspace/README.md — Usage](1_azure_machine_learning_workspace/README.md#usage).
+  This creates the workspace, VNet, subnets, Key Vault, storage, compute, and a **private endpoint** for the workspace in subnet 2.
 
 #### Create Azure Function App for Token rotation
 
