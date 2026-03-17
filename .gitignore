@@ -16,9 +16,14 @@ htmlcov/
 *.egg-info/
 dist/
 build/
+.python_packages/
 
 # Config
+.cursor/
+.github/
 config/config.yaml
+config/config.yaml.poc
+
 # Environment variables
 .env
 .env.local
@@ -49,6 +54,9 @@ Thumbs.db
 
 # Azure
 .azure/
+__azurite_db_blob_extent__.json
+__azurite_db_blob__.json
+__blobstorage__/AzuriteConfig
 
 # Jupyter
 .ipynb_checkpoints/
@@ -56,6 +64,7 @@ Thumbs.db
 
 # Logs
 *.log
+
 # Test Scripts
 test-oidc.py
 workspace-tester.py
@@ -63,4 +72,11 @@ pip.conf
 setup_env.sh
 downloaded_artifacts/*
 
-
+# Terraform
+*/terraform/.terraform.tfstate.lock.info
+*/terraform/terraform.tfstate.backup
+*/terraform/.terraform/
+*/terraform/.terraform.lock.hcl
+*/terraform/terraform.tfvars
+*/terraform/terraform.tfstate
+*/terraform.tfstate

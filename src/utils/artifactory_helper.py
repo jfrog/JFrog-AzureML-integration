@@ -14,6 +14,7 @@ import requests
 from typing import Optional, Dict, Any
 from azure.identity import DefaultAzureCredential, ManagedIdentityCredential
 from azure.keyvault.secrets import SecretClient
+import json
 
 try:
     import frogml
@@ -30,7 +31,6 @@ class ArtifactoryHelper:
         self,
         artifactory_host: str,
         key_vault_name: str,
-        username_secret_name: str,
         access_token_secret_name: Optional[str] = None
     ):
         """
@@ -39,15 +39,11 @@ class ArtifactoryHelper:
         Args:
             artifactory_host: Base URL of Artifactory instance
             key_vault_name: Name of Azure Key Vault
-            username_secret_name: Name of secret containing Artifactory username
-            password_secret_name: Name of secret containing Artifactory password
-            api_key_secret_name: Optional name of secret containing Artifactory API key
-            access_token_secret_name: Optional name of secret containing Artifactory access token
+            access_token_secret_name: name of secret containing Artifactory access token and username
                                    (preferred for frogml authentication)
         """
         self.artifactory_host = artifactory_host.rstrip('/')
         self.key_vault_name = key_vault_name
-        self.username_secret_name = username_secret_name
         self.access_token_secret_name = access_token_secret_name
         
         self._credentials = None
@@ -76,23 +72,28 @@ class ArtifactoryHelper:
         """Retrieve Artifactory credentials from Azure Key Vault."""
         if self._credentials is None:
             client = self._get_key_vault_client()
+        
+            username = None
+            access_token = None
+            try:
+              secret_value = client.get_secret(self.access_token_secret_name).value
+              secret_value_json = json.loads(secret_value)
+              access_token = secret_value_json['access_token']
+              username = secret_value_json['username']
+            except Exception as e:
+                print(f"Warning: Could not retrieve  access token and username token: {e}")            
             
-            username = client.get_secret(self.username_secret_name).value
+            
+            
+            
+            
             
             self._credentials = {
                 'username': username,
+                'access_token': access_token,
             }
             
-            # Prefer access token for frogml authentication
-            if self.access_token_secret_name:
-                try:
-                    access_token = client.get_secret(self.access_token_secret_name).value
-                    self._credentials['access_token'] = access_token
-                except Exception:
-                    # Access token not available
-                    pass
 
-        
         return self._credentials
     
     
@@ -159,14 +160,7 @@ class ArtifactoryHelper:
         
         # Convert metadata to properties if provided
         properties = {}
-        ######
-        #Comment because getting error when using metadata:
-        #2025-12-02 23:16:08,020 - ERROR - frogml.storage.logging._log_config.frog_ml.__upload_entity_version:253 - Max length for Properties is 60 characters.
-        #ERROR:FilesModelVersionManager:An error occurred while logging model iris-classifier to azureml-ml-local
 
-        # if metadata and not properties:
-        #     for key, value in metadata.items():
-        #         properties[str(key)] = str(value) if not isinstance(value, (dict, list)) else str(value)
         
         try:
             # Upload model using frogml.files.log_model()
@@ -197,48 +191,6 @@ class ArtifactoryHelper:
             
         except Exception as e:
             raise Exception(f"Failed to upload model using frogml: {str(e)}")
-    
-    def verify_model_upload(
-        self,
-        ml_repo_name: str,
-        model_name: str,
-        version: str,
-        filename: str
-    ) -> bool:
-        """
-        Verify that a model was successfully uploaded to Artifactory ML Repository.
-        Uses frogml to check if model exists.
-        
-        Args:
-            ml_repo_name: Name of the ML repository
-            model_name: Name of the model
-            version: Version of the model
-            filename: Name of the uploaded file
-            
-        Returns:
-            True if model exists, False otherwise
-        """
-        # Configure frogml with credentials from Key Vault
-        self._configure_frogml()
-        
-        try:
-            # Try using frogml to verify model existence
-            if FROGML_AVAILABLE:
-                try:
-                    # Use frogml.files.get_model_info() to check if model exists
-                    model_info = frogml.files.get_model_info(
-                        repository=ml_repo_name,
-                        model_name=model_name,
-                        version=version
-                    )
-                    # If we can get the model info, it exists
-                    return model_info is not None
-                except (AttributeError, Exception) as e:
-                    # frogml method may not be available or model doesn't exist
-                    # Fall back to REST API
-                    pass
-        except Exception:
-            return False
 
     
     def download_model_from_ml_repository(

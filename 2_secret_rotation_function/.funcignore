@@ -1,0 +1,15 @@
+# Exclude from func azure functionapp publish package.
+# terraform/ must be excluded so the packager does not open terraform.tfstate
+# (which is locked by Terraform during apply).
+terraform/
+terraform.old/
+.venv/
+.venv
+__pycache__/
+.python_packages/
+.git/
+*.pyc
+.pytest_cache/
+local.settings.json
+.env
+.env.*
