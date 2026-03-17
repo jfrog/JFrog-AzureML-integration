@@ -901,7 +901,7 @@ FUNCTION_APP_NAME="<your-function-app-name>" #e.g. artifactory-token-rotation
 RESOURCE_GROUP="<your-resource-group>"
 ```
 
-### Get Function App Cluster Information
+### Get Function App principalId 
 
 ```bash
 
@@ -1046,7 +1046,7 @@ For more information, see the [JFrog Artifactory OIDC Documentation](https://www
 ```bash
 TENANT_ID=<tenant id> #(also called `azure_tenant_id`)
 APP_CLIENT_ID=<Entra ID App Registration client ID> #(also called `azure_app_client_id`)
-PRINCIPAL_ID=<Function App Managed Identity ID> #Principal ID of the caller (Function App Managed Identity)
+PRINCIPAL_ID=<Function App principalId> #Principal ID of the caller (Function App Managed Identity)
 ```
 
 #### Get Artifactory Admin Token
