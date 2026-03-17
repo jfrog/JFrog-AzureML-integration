@@ -35,7 +35,7 @@ echo "Creating zip package from $SOURCE_DIR ..."
 )
 
 
-# echo "Deploying to Function App: $FUNCTION_APP_NAME (resource group: $RG_NAME) ..."
+echo "Deploying to Function App: $FUNCTION_APP_NAME (resource group: $RG_NAME) ..."
 az functionapp deployment source config-zip \
   --resource-group "$RG_NAME" \
   --name "$FUNCTION_APP_NAME" \
@@ -43,7 +43,7 @@ az functionapp deployment source config-zip \
   --build-remote true \
   --timeout 600
 
-# echo "Cleaning up zip ..."
+echo "Cleaning up zip ..."
 rm -f "$ZIP_FILE"
 
 # Invoke the timer-triggered function once so the Key Vault secret is updated immediately

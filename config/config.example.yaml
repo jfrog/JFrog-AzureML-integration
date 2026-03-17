@@ -25,9 +25,6 @@ azureml:
     vm_size: "PLACEHOLDER" # vm size of the AzureML compute cluster (e.g. "Standard_DS3_v2")
     min_nodes: 0
     max_nodes: 1
-    # TODO: (Optional) In case the user use existing AzureML compute cluster, the user can set the managed_identity and managed_identity_client_id to the existing managed identity and client id
-    #managed_identity: "PLACEHOLDER" # use the resource id from the json view of the managed identity you created on the enviornment setup step (e.g. "/subscriptions/<subscription ID>/resourceGroups/<resource group name>/providers/Microsoft.ManagedIdentity/userAssignedIdentities/<managed identity name>")
-    #managed_identity_client_id: "PLACEHOLDER" # use the client id from the managed identity you created on the enviornment setup step (e.g. "<managed identity client id>")
     
 model:
   name: "PLACEHOLDER" # add a name for the resulting trained model (e.g. "iris-classifier")
