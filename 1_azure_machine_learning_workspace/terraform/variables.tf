@@ -59,6 +59,12 @@ variable "compute_cluster_vm_size" {
   default     = "Standard_DS3_v2"
 }
 
+variable "compute_cluster_name" {
+  type        = string
+  description = "Compute cluster name."
+  default     = "azureml-poc-cluster"
+}
+
 variable "tags" {
   description = "Tags to apply to all resources"
   type        = map(string)
@@ -66,8 +72,6 @@ variable "tags" {
     project     = "jfrog-azureml-integration"
     managed_by  = "terraform"
     environment = "dev"
-    owner       = "CTO"
-    Group       = "cto"
     application = "azureml"
   }
 }

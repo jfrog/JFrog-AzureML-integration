@@ -22,7 +22,6 @@ artifactory:
 azureml:
   compute:
     cluster_name: "PLACEHOLDER" # name of the AzureML compute cluster (e.g. "azureml-poc-cluster1")
-    vm_size: "PLACEHOLDER" # vm size of the AzureML compute cluster (e.g. "Standard_DS3_v2")
     min_nodes: 0
     max_nodes: 1
     

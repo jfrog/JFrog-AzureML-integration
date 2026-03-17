@@ -317,8 +317,11 @@ sequenceDiagram
 
 ### Prerequisites
 
-- AzureML Workspace (R&R: Azure Administrator)
+- AzureML Workspace
+- Compute Cluster with system assigned managed identities
 - In the Azure Machine Learning workspace resource, add Contributor role to the relevant users or identities.
+- Azure CLI configured
+- Azure CLI requires the `ml extension`, run `az extension add --name ml` if the command is not found.
 - Artifactory Access Token and Username
 
 ### Set Up
@@ -331,11 +334,19 @@ The AzureML Compute Cluster uses a **system-assigned managed identity** to acces
 For more information, see [Assign Azure roles using Azure CLI](https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-cli).
 
 ```bash
+
+RESOURCE_GROUP="<your-resource-group>"
+WORKSPACE_NAME="<workspace-name>"
+COMPUTE_CLUSTER_NAME="<compute-cluster-name>"
+SUBSCRIPTION_ID="<subscription-id>"
+KEY_VAULT_NAME="<key-vault-name>"
+STORAGE_ACCOUNT="<storage-account-name>"
+
 # Get the compute cluster's principal ID
 COMPUTE_PRINCIPAL_ID=$(az ml compute show \
-  --name <compute-cluster-name> \
-  --resource-group <resource-group> \
-  --workspace-name <workspace-name> \
+  --name $COMPUTE_CLUSTER_NAME \
+  --resource-group $RESOURCE_GROUP \
+  --workspace-name $WORKSPACE_NAME \
   --query "identity.principal_id" -o tsv)
 
 # Assign Key Vault Secrets User role
@@ -343,14 +354,14 @@ az role assignment create \
   --assignee-object-id "$COMPUTE_PRINCIPAL_ID" \
   --assignee-principal-type ServicePrincipal \
   --role "Key Vault Secrets User" \
-  --scope "/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.KeyVault/vaults/<key-vault-name>"
+  --scope "/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.KeyVault/vaults/$KEY_VAULT_NAME"
 
 # Assign Storage Blob Data Contributor role
 az role assignment create \
   --assignee-object-id "$COMPUTE_PRINCIPAL_ID" \
   --assignee-principal-type ServicePrincipal \
   --role "Storage Blob Data Contributor" \
-  --scope "/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.Storage/storageAccounts/<storage-account-name>"
+  --scope "/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.Storage/storageAccounts/$STORAGE_ACCOUNT"
 ```
 
 - In the Azure Key Vault IAM, add **Key Vault Administrator** role to the relevant users or identities to enable one-time secret creation. For more information, see [Assign Azure roles using Azure CLI](https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-cli).
@@ -358,7 +369,7 @@ az role assignment create \
 
 ```bash
 az keyvault secret set \
-  --vault-name <key-vault-name> \
+  --vault-name $KEY_VAULT_NAME \
   --name artifactory-access-token-secret \
   --value '{"access_token":"<ACCESS TOKEN>","username":"<USERNAME>"}'
 ```
@@ -425,8 +436,8 @@ cp config/config.example.yaml config/config.yaml
 Submit the training pipeline:
 
 ```bash
-    cd <project directory>
-    python pipeline/training_pipeline.py
+cd <project directory>
+python pipeline/training_pipeline.py
 ```
 
 Once the training pipeline completes, you will get a URL for the Azure ML job it created. Use that to open the training job and follow its progress.
@@ -1034,8 +1045,8 @@ For more information, see the [JFrog Artifactory OIDC Documentation](https://www
 ### Prerequisites
 ```bash
 TENANT_ID=<tenant id> #(also called `azure_tenant_id`)
-$APP_CLIENT_ID=<Entra ID App Registration client ID> #(also called `azure_app_client_id`)
-$PRINCIPAL_ID #Principal ID of the caller (Function App Managed Identity)
+APP_CLIENT_ID=<Entra ID App Registration client ID> #(also called `azure_app_client_id`)
+PRINCIPAL_ID=<Function App Managed Identity ID> #Principal ID of the caller (Function App Managed Identity)
 ```
 
 #### Get Artifactory Admin Token

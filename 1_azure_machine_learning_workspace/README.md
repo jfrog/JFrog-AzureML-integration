@@ -1,4 +1,4 @@
-# 1 — Azure Machine Learning workspace (R&R: Azure Administrator)
+#  1 — Azure Machine Learning workspace (R&R: Azure Administrator)
 
 This module provisions the **Azure Machine Learning workspace** and supporting infrastructure used by the JFrog–Azure ML integration. It is intended to be applied **first**; the [2_secret_rotation_function](../2_secret_rotation_function) Terraform can consume its outputs for Key Vault, storage, and resource group.
 
@@ -36,12 +36,10 @@ This module provisions the **Azure Machine Learning workspace** and supporting i
    terraform apply
   ```
 3. **Use outputs elsewhere** — After apply, you can pass these outputs into the secret rotation function as variables. The 2_secret_rotation_function Terraform expects (see [2_secret_rotation_function/terraform/README.md](../2_secret_rotation_function/terraform/README.md)):
-  
   - `resource_group_name` ← `terraform output -raw resource_group_name`
   - `key_vault_name` ← `terraform output -raw key_vault_name`
   - `existing_storage_account_name` ← `terraform output -raw storage_account_name`
   - `function_app_integration_subnet_id` ← `terraform output -raw subnet_id_1`
- 
 
 ## Main variables
 
@@ -97,7 +95,7 @@ These outputs are used by [2_secret_rotation_function](../2_secret_rotation_func
 To remove all resources created by this module (resource group, VNet, Key Vault, storage, ML workspace, compute cluster, private endpoint, and private DNS):
 
 ```bash
-cd terraform
+cd 1_azure_machine_learning_workspace/terraform
 terraform plan -destroy
 terraform destroy
 ```

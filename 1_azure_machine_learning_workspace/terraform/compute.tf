@@ -13,7 +13,7 @@ resource "time_sleep" "before_compute" {
 # Azure Machine Learning
 # Compute Cluster
 resource "azurerm_machine_learning_compute_cluster" "compute" {
-  name                          = "azureml-poc-cluster"
+  name                          = var.compute_cluster_name
   location                      = azurerm_resource_group.rg.location
   machine_learning_workspace_id = azurerm_machine_learning_workspace.default.id
   vm_priority                   = var.compute_cluster_vm_priority

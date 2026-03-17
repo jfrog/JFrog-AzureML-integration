@@ -139,7 +139,6 @@ def main():
     parser = argparse.ArgumentParser(description='Submit deployment and inference pipeline')
     parser.add_argument('--model-name', type=str, default=None, help='Model name in Artifactory')
     parser.add_argument('--model-version', type=str, required=True, help='Model version in Artifactory (required)')
-    #parser.add_argument('--inference-results-dir', type=str, default=None, help='Inference results directory')
     args = parser.parse_args()
     
     # Load configuration
@@ -157,21 +156,8 @@ def main():
         compute = ml_client.compute.get(config['azureml']['compute']['cluster_name'])
         print(f"Using existing compute cluster: {compute.name}")
     except Exception:
-        print(f"Creating compute cluster: {config['azureml']['compute']['cluster_name']}")
-        # Create compute with user-assigned managed identity
-        compute = AmlCompute(
-            name=config['azureml']['compute']['cluster_name'],
-            size=config['azureml']['compute']['vm_size'],
-            min_instances=config['azureml']['compute']['min_nodes'],
-            max_instances=config['azureml']['compute']['max_nodes'],
-            identity=IdentityConfiguration(
-                type="user_assigned",
-                user_assigned_identities=[ManagedIdentityConfiguration(
-                    resource_id=config['azureml']['compute']['managed_identity']
-                )]
-            )
-        )
-        ml_client.compute.begin_create_or_update(compute).result()
+        print(f"Compute cluster not found: {config['azureml']['compute']['cluster_name']}")
+        raise Exception(f"Compute cluster not found: {config['azureml']['compute']['cluster_name']}")
     
     # Create workspace connection for Artifactory Docker registry authentication
     try:

@@ -117,8 +117,6 @@ def training_pipeline():
         "metadata": Output(
             type="uri_folder", 
             mode="upload",
-            # Ensure the datastore part 'workspaceblobstore' is exactly as named in your workspace
-            #path="azureml://datastores/workspaceblobstore/paths/outputs/metadata_dir/"
         )
     },
             environment_variables=env_vars
@@ -150,17 +148,8 @@ def main():
         compute = ml_client.compute.get(config['azureml']['compute']['cluster_name'])
         print(f"Using existing compute cluster: {compute.name}")
     except Exception:
-        print(f"Creating compute cluster: {config['azureml']['compute']['cluster_name']}")
-        # Create compute with user-assigned managed identity
-        compute = AmlCompute(
-            name=config['azureml']['compute']['cluster_name'],
-            size=config['azureml']['compute']['vm_size'],
-            min_instances=config['azureml']['compute']['min_nodes'],
-            max_instances=config['azureml']['compute']['max_nodes'],
-            identity=IdentityConfiguration(type="user_assigned",user_assigned_identities=[ManagedIdentityConfiguration(resource_id=config['azureml']['compute']['managed_identity'])])
-            
-        )
-        ml_client.compute.begin_create_or_update(compute).result()
+        print(f"Compute cluster not found: {config['azureml']['compute']['cluster_name']}")
+        raise Exception(f"Compute cluster not found: {config['azureml']['compute']['cluster_name']}")
 
     # Create workspace connection for Artifactory Docker registry authentication
     # This allows AzureML to pull the Docker image from Artifactory
