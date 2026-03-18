@@ -521,7 +521,7 @@ az rest --method PATCH \
 
 ### Prerequisites
 
-- Artifactory Access Token and Username
+- Artifactory ACCESS_TOKEN and USERNAME
 
 ### Set Up
 
@@ -646,7 +646,7 @@ For more information, see [Quickstart: Set and retrieve a secret from Azure Key 
 az keyvault secret set \
   --vault-name $KEY_VAULT_NAME \
   --name artifactory-access-token-secret \
-  --value '{"access_token":"<ACCESS TOKEN>","username":"<USERNAME>"}'
+  --value '{"access_token":"<ACCESS_TOKEN>","username":"<USERNAME>"}'
 ```
 
 ---
