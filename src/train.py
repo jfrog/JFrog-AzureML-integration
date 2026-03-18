@@ -138,8 +138,7 @@ if __name__ == "__main__":
             helper = ArtifactoryHelper(
                 artifactory_host=os.environ['ARTIFACTORY_HOST'],
                 key_vault_name=os.environ['AZURE_KEY_VAULT_NAME'],
-                username_secret_name=os.environ.get('ARTIFACTORY_USERNAME_SECRET', 'artifactory-username'),
-                access_token_secret_name=os.environ.get('ARTIFACTORY_ACCESS_TOKEN_SECRET')
+                access_token_secret_name=os.environ.get('ARTIFACTORY_ACCESS_TOKEN_SECRET_NAME')
             )
             
             # Load metadata

@@ -1,6 +1,5 @@
 # Dockerfile for AzureML training with Artifactory integration
 # Uses Python 3.11+ and installs packages from Artifactory PyPI repository during build
-##TODO: change it to multi layer build
 # Artifactory Docker registry and repository (optional - for backward compatibility)
 # If provided, BASE_IMAGE will be constructed as: ${ARTIFACTORY_DOCKER_REGISTRY}/${ARTIFACTORY_DOCKER_REPO}/python:3.11-slim
 # Otherwise defaults to public python:3.11-slim
@@ -8,20 +7,10 @@ ARG ARTIFACTORY_DOCKER_REGISTRY
 ARG ARTIFACTORY_DOCKER_REPO
 # Base image: defaults to python:3.11-slim, can be overridden with full path
 # Example: docker build --build-arg BASE_IMAGE=your-registry.com/your-repo/python:3.11-slim
-#ARG BASE_IMAGE=python:3.13.11-slim
-#ARG BASE_IMAGE=python:3.13.11-alpine
 ARG BASE_IMAGE=python:3.13.11-slim
 FROM ${BASE_IMAGE} AS builder
 
-# Install build dependencies needed for compiling Python packages (e.g., scikit-learn)
-# Note: Alpine uses apk package manager and musl libc (not glibc)
-# RUN apk add --no-cache \
-#         build-base \
-#         gcc \
-#         g++ \
-#         python3-dev \
-#         musl-dev \
-#         linux-headers
+
 
 # Set working directory
 WORKDIR /app

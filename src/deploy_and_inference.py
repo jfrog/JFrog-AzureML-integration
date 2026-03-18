@@ -20,7 +20,6 @@ def download_model_from_artifactory(
     download_dir: str,
     artifactory_host: str,
     key_vault_name: str,
-    username_secret_name: str,
     access_token_secret_name: str = None,
     client_id: str = None
 ) -> str:
@@ -49,7 +48,6 @@ def download_model_from_artifactory(
     helper = ArtifactoryHelper(
         artifactory_host=artifactory_host,
         key_vault_name=key_vault_name,
-        username_secret_name=username_secret_name,
         access_token_secret_name=access_token_secret_name
     )
     
@@ -196,8 +194,7 @@ def main():
         artifactory_host = os.environ.get('ARTIFACTORY_HOST')
         ml_repo = os.environ.get('ARTIFACTORY_ML_REPO')
         key_vault_name = os.environ.get('AZURE_KEY_VAULT_NAME')
-        username_secret = os.environ.get('ARTIFACTORY_USERNAME_SECRET', 'artifactory-username')
-        access_token_secret = os.environ.get('ARTIFACTORY_ACCESS_TOKEN_SECRET')
+        access_token_secret_name = os.environ.get('ARTIFACTORY_ACCESS_TOKEN_SECRET_NAME')
         client_id = os.environ.get('AZURE_CLIENT_ID')
         
         if not all([artifactory_host, ml_repo, key_vault_name]):
@@ -218,8 +215,7 @@ def main():
             download_dir=download_dir,
             artifactory_host=artifactory_host,
             key_vault_name=key_vault_name,
-            username_secret_name=username_secret,
-            access_token_secret_name=access_token_secret,
+            access_token_secret_name=access_token_secret_name,
             client_id=client_id
         )
         
