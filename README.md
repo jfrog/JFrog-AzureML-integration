@@ -322,7 +322,7 @@ sequenceDiagram
 - In the Azure Machine Learning workspace resource, add Contributor role to the relevant users or identities.
 - Azure CLI configured
 - Azure CLI requires the `ml extension`, run `az extension add --name ml` if the command is not found.
-- Artifactory Access Token and Username
+- Artifactory ACCESS_TOKEN and USERNAME
 
 ### Set Up
 
@@ -371,7 +371,7 @@ az role assignment create \
 az keyvault secret set \
   --vault-name $KEY_VAULT_NAME \
   --name artifactory-access-token-secret \
-  --value '{"access_token":"<ACCESS TOKEN>","username":"<USERNAME>"}'
+  --value '{"access_token":"<ACCESS_TOKEN>","username":"<USERNAME>"}'
 ```
 
 ### JFrog Setup (R&R: JFrog Administrator or Project Admin)
