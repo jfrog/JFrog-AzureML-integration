@@ -44,7 +44,6 @@ resource "azurerm_function_app_flex_consumption" "function_app" {
     }
 
     # SCM: restrict to deployer IPs for zip deployment
-    # TODO: Keep it, pass it via variable and add it to the README
     scm_use_main_ip_restriction       = false
     scm_ip_restriction_default_action = length(var.deployer_ip_addresses) > 0 ? "Deny" : "Allow"
 
