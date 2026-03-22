@@ -1,3 +1,4 @@
+# (c) JFrog Ltd (2026).
 """
 Deployment and Batch Inference Script
 Downloads model from Artifactory, loads it, and runs batch inference on test data.

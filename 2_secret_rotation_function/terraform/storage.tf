@@ -1,3 +1,4 @@
+# (c) JFrog Ltd (2026).
 # ──────────────────────────────────────────────
 # Existing Azure ML workspace storage account (data source only)
 # ──────────────────────────────────────────────

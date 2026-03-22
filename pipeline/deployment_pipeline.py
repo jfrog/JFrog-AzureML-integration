@@ -1,3 +1,4 @@
+# (c) JFrog Ltd (2026).
 """
 AzureML Pipeline for deploying models and running batch inference.
 This pipeline:

@@ -1,3 +1,4 @@
+# (c) JFrog Ltd (2026).
 """
 Simple ML Model Training Script
 Trains a scikit-learn model on the Iris dataset and saves the model.

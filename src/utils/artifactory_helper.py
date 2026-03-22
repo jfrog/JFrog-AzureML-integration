@@ -1,3 +1,4 @@
+# (c) JFrog Ltd (2026).
 """
 Artifactory Helper Module
 Provides functions to interact with JFrog Artifactory for:

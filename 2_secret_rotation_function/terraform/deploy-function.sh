@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# (c) JFrog Ltd (2026).
 # Deploy the function app to Azure using az CLI zip deploy with remote build.
 # This is more reliable than `func publish` on Linux Consumption plans.
 # Run from this directory (secret_rotation_function/terraform). Requires:

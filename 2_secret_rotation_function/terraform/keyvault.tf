@@ -1,3 +1,4 @@
+# (c) JFrog Ltd (2026).
 # ──────────────────────────────────────────────
 # Existing Azure ML workspace Key Vault (data source only)
 # ──────────────────────────────────────────────

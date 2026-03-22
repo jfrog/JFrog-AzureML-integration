@@ -1,3 +1,4 @@
+# (c) JFrog Ltd (2026).
 terraform {
   required_version = ">= 1.5.0"
 

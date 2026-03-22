@@ -1,3 +1,4 @@
+# (c) JFrog Ltd (2026).
 variable "subscription_id" {
   type        = string
   description = "Azure subscription ID."

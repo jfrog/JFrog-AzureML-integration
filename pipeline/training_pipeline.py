@@ -1,3 +1,4 @@
+# (c) JFrog Ltd (2026).
 """
 AzureML Pipeline for training ML models with Artifactory integration.
 This pipeline demonstrates:

@@ -1,3 +1,4 @@
+# (c) JFrog Ltd (2026).
 # Wait 120s after workspace and private endpoint (subnet_2, VNET) are ready before creating compute cluster
 resource "time_sleep" "before_compute" {
   create_duration = "120s"
