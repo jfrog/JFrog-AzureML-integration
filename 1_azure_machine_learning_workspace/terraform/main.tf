@@ -1,3 +1,4 @@
+# (c) JFrog Ltd (2026).
 # Data source for current Azure client config (tenant_id, etc.)
 data "azurerm_client_config" "current" {}
 

@@ -1,3 +1,4 @@
+# (c) JFrog Ltd (2026).
 #Resource Group
 output "resource_group_name" {
   description = "The name of the created resource group."

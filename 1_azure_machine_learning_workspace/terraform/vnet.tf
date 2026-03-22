@@ -1,3 +1,4 @@
+# (c) JFrog Ltd (2026).
 # Virtual Network
 resource "azurerm_virtual_network" "my_terraform_network" {
   name                = "${random_pet.prefix.id}-vnet"

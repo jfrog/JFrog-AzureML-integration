@@ -1,3 +1,4 @@
+# (c) JFrog Ltd (2026).
 # Dockerfile for AzureML training with Artifactory integration
 # Uses Python 3.11+ and installs packages from Artifactory PyPI repository during build
 # Artifactory Docker registry and repository (optional - for backward compatibility)

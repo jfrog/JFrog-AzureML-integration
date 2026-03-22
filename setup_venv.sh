@@ -1,4 +1,5 @@
 #!/bin/bash
+# (c) JFrog Ltd (2026).
 # setup_venv.sh
 
 

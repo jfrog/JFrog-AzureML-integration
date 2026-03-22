@@ -1,3 +1,4 @@
+# (c) JFrog Ltd (2026).
 """
 Azure Function: JFrog Artifactory Token Rotation
 Triggered by Timer or HTTP POST.

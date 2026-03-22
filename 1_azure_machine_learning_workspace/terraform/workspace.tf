@@ -1,3 +1,4 @@
+# (c) JFrog Ltd (2026).
 
 # Dependent resources for Azure Machine Learning
 resource "azurerm_application_insights" "default" {
