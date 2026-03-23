@@ -947,7 +947,7 @@ You should see your federated credential with:
 
 ### 5. Update Azure Entra ID App Registration by enabling Assignment Required (R&R: Azure Administrator)
 
-By default, **Assignment Required** is set to **No** on the enterprise application. This means any user or service principal in your tenant can acquire an access token from the app registration. Since the JFrog Credential Provider exchanges this token with Artifactory for image pull credentials, leaving this open is a security concern.
+By default, **Assignment Required** is set to **No** on the enterprise application. This means any user or service principal in your tenant can acquire an access token from the app registration.
 
 Setting **Assignment Required** to **Yes** ensures that only explicitly assigned principals can obtain tokens from the app.
 
