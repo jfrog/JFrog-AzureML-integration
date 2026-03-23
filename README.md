@@ -781,11 +781,6 @@ az role assignment create \
   --scope "/subscriptions/<subscription-id>/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.Storage/storageAccounts/$STORAGE_ACCOUNT_NAME"
 ```
 
-> **Important:** Save these values for later use:
->
-> - `Function App Enterprise Application Object ID` (also called `function_app_identity_principal_id`) — this is the `$FUNCTION_PRINCIPAL_ID` value from the identity assignment step above
-
-
 **Continue with the Federated Identity Credentials Creation:**
 
 Described in [Step 3](#3-federated-identity-credentials-rr-azure-administrator)
@@ -1094,12 +1089,12 @@ az functionapp config appsettings set \
   --name $FUNCTION_APP_NAME \
   --resource-group $RESOURCE_GROUP \
   --settings \
-    KEY_VAULT_NAME=$KEY_VAULT_NAME \
-    ARTIFACTORY_URL=$ARTIFACTORY_URL \
-    JFROG_OIDC_PROVIDER_NAME=$JFROG_OIDC_PROVIDER_NAME \
-    AZURE_AD_TOKEN_AUDIENCE=$AZURE_AD_TOKEN_AUDIENCE \
-    ARTIFACTORY_TOKEN_SECRET_NAME=$ARTIFACTORY_TOKEN_SECRET_NAME \
-    SECRET_TTL=$SECRET_TTL \
+    KEY_VAULT_NAME="$KEY_VAULT_NAME" \
+    ARTIFACTORY_URL="$ARTIFACTORY_URL" \
+    JFROG_OIDC_PROVIDER_NAME="$JFROG_OIDC_PROVIDER_NAME" \
+    AZURE_AD_TOKEN_AUDIENCE="$AZURE_AD_TOKEN_AUDIENCE" \
+    ARTIFACTORY_TOKEN_SECRET_NAME="$ARTIFACTORY_TOKEN_SECRET_NAME" \
+    SECRET_TTL="$SECRET_TTL" \
     AzureWebJobsStorage__accountName="$STORAGE_ACCOUNT_NAME"
 ```
 
