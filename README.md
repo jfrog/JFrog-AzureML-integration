@@ -525,7 +525,7 @@ az rest --method PATCH \
 
 ### Set Up
 
-#### 2a. Create AzureML Workspace with VNet
+#### 1. Create AzureML Workspace with VNet
 
 Create the AzureML Workspace and its dependent resources. For detailed guidance, see [Create workspaces with Azure CLI](https://learn.microsoft.com/en-us/azure/machine-learning/how-to-manage-workspace-cli?view=azureml-api-2).
 
@@ -649,9 +649,8 @@ az keyvault secret set \
   --value '{"access_token":"<ACCESS_TOKEN>","username":"<USERNAME>"}'
 ```
 
----
 
-#### 2b. Create the Azure Function App for Token Rotation
+#### 2. Create the Azure Function App for Token Rotation
 
 The Function App performs automatic OIDC-based token exchange with JFrog Artifactory and stores the resulting short-lived access token in Key Vault.
 
@@ -782,79 +781,9 @@ az role assignment create \
   --scope "/subscriptions/<subscription-id>/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.Storage/storageAccounts/$STORAGE_ACCOUNT_NAME"
 ```
 
-**Configure Function App settings:**
+**Continue with the Federated Identity Credentials Creation:**
 
-These environment variables control the token rotation behavior. For more information, see [Configure function app settings](https://learn.microsoft.com/en-us/azure/azure-functions/functions-how-to-use-azure-function-app-settings).
-
-```bash
-az functionapp config appsettings set \
-  --name $FUNCTION_APP_NAME \
-  --resource-group $RESOURCE_GROUP \
-  --settings \
-    KEY_VAULT_NAME="$KEY_VAULT_NAME" \
-    ARTIFACTORY_URL="https://<your-jfrog-instance>.jfrog.io" \
-    JFROG_OIDC_PROVIDER_NAME="<oidc-provider-name>" \
-    AZURE_AD_TOKEN_AUDIENCE="<azure-app-client-id>" \
-    ARTIFACTORY_TOKEN_SECRET_NAME="artifactory-access-token-secret" \
-    SECRET_TTL="21600" \
-    AzureWebJobsStorage__accountName="$STORAGE_ACCOUNT_NAME"
-```
-
-| Setting | Description |
-|---------|-------------|
-| `KEY_VAULT_NAME` | Name of the AzureML workspace Key Vault |
-| `ARTIFACTORY_URL` | Base URL of your JFrog platform (e.g. `https://myorg.jfrog.io`) |
-| `JFROG_OIDC_PROVIDER_NAME` | Name of the OIDC provider configured in JFrog (created in [step 6](#6-jfrog-artifactory-oidc-configuration-rr-jfrog-administrator-or-project-admin)) |
-| `AZURE_AD_TOKEN_AUDIENCE` | Azure Entra ID App Registration Client ID (from [step 1](#create-azure-entra-id-app-registration)) |
-| `ARTIFACTORY_TOKEN_SECRET_NAME` | Key Vault secret name where the rotated token is stored |
-| `SECRET_TTL` | Token time-to-live in seconds (default: `21600` = 6 hours) |
-
----
-
-#### 2c. Deploy the Function Code
-
-Package and deploy the token rotation function to the Function App. For more information, see [Zip push deployment for Azure Functions](https://learn.microsoft.com/en-us/azure/azure-functions/deployment-zip-push).
-
-```bash
-# Create deployment package
-cd 2_secret_rotation_function
-zip -r function_app.zip . \
-  -x "terraform/*" "__pycache__/*" ".venv/*" "*.pyc" \
-     ".pytest_cache/*" "local.settings.json" ".env"
-
-# Deploy to Azure
-az functionapp deployment source config-zip \
-  --resource-group $RESOURCE_GROUP \
-  --name $FUNCTION_APP_NAME \
-  --src function_app.zip \
-  --build-remote true \
-  --timeout 600
-
-# Clean up
-rm function_app.zip
-cd -
-```
-
-**Invoke the function once** to perform the initial token rotation (otherwise the Key Vault secret is only updated on the next timer invocation):
-
-```bash
-FUNCTION_KEY=$(az functionapp keys list \
-  --resource-group $RESOURCE_GROUP \
-  --name $FUNCTION_APP_NAME \
-  --query "functionKeys.default" -o tsv)
-
-FUNCTION_URL="https://${FUNCTION_APP_NAME}.azurewebsites.net"
-
-curl -s -X POST "$FUNCTION_URL/api/KeyVaultSecretRotation" \
-  -H "x-functions-key: $FUNCTION_KEY" \
-  -H "Content-Type: application/json"
-```
-
-A `200` response with `{"status": "ok", ...}` confirms the rotation is working. In case of any error or failure, see [Azure Function App troubleshooting documentation](https://learn.microsoft.com/en-us/troubleshoot/azure/azure-functions/welcome-azure-functions).
-
-> **Important:** Save these values for later use:
->
-> - `Function App Enterprise Application Object ID` (also called `function_app_identity_principal_id`) — this is the `$FUNCTION_PRINCIPAL_ID` value from the identity assignment step above
+Described in [Step 3](#3-federated-identity-credentials-rr-azure-administrator)
 
 ---
 
@@ -862,31 +791,31 @@ A `200` response with `{"status": "ok", ...}` confirms the rotation is working. 
 
 ### Set Up
 
-#### Create AzureML Workspace, Storage Account and Azure Key Vault
+### Create AzureML Workspace, Storage Account and Azure Key Vault
 
-### Prerequisites
+#### Prerequisites
 
 - See [1_azure_machine_learning_workspace/README.md — Prerequisites](1_azure_machine_learning_workspace/README.md#prerequisites)
 
-### Deploy
+#### Deploy
 
 - See [1_azure_machine_learning_workspace/README.md — Usage](1_azure_machine_learning_workspace/README.md#usage).
   
   This creates the workspace, VNet, subnets, Key Vault, storage, compute, and a **private endpoint** for the workspace in subnet 2.
 
-#### Create Azure Function App for Token Rotation
+### Create Azure Function App for Token Rotation
 
-### Prerequisites
+#### Prerequisites
 
 - See [2_secret_rotation_function/terraform/README.md — Prerequisites](2_secret_rotation_function/terraform/README.md#prerequisites)
 
-### Deploy
+#### Deploy
 
 - See [2_secret_rotation_function/terraform/README.md — Usage](2_secret_rotation_function/terraform/README.md#usage).
 
 ---
 
-## 3. Federated Identity Credentials (R&R: Azure Administrator)
+### 3. Federated Identity Credentials (R&R: Azure Administrator)
 
 Federated credentials allow the Function App managed identity to exchange tokens with the Azure Entra ID App Registration. This establishes trust between your Function App and Azure Entra ID.
 
@@ -912,7 +841,7 @@ PRINCIPAL_ID=$(az functionapp identity show \
   -o tsv)
 ```
 
-### 4. Create Federated Identity Credential
+### Create Federated Identity Credential
 
 ```bash
 
@@ -945,9 +874,11 @@ You should see your federated credential with:
 - `subject`: Your Function App identity object ID
 - `audiences`: `["api://AzureADTokenExchange"]`
 
-### 5. Update Azure Entra ID App Registration by enabling Assignment Required (R&R: Azure Administrator)
+---
 
-By default, **Assignment Required** is set to **No** on the enterprise application. This means any user or service principal in your tenant can acquire an access token from the app registration. Since the JFrog Credential Provider exchanges this token with Artifactory for image pull credentials, leaving this open is a security concern.
+### 4. Update Azure Entra ID App Registration by enabling Assignment Required (R&R: Azure Administrator)
+
+By default, **Assignment Required** is set to **No** on the enterprise application. This means any user or service principal in your tenant can acquire an access token from the app registration.
 
 Setting **Assignment Required** to **Yes** ensures that only explicitly assigned principals can obtain tokens from the app.
 
@@ -1036,7 +967,7 @@ After this, the credential provider will continue to work via the federated cred
 
 ---
 
-### 6. JFrog Artifactory OIDC Configuration (R&R: JFrog Administrator or Project Admin)
+### 5. JFrog Artifactory OIDC Configuration (R&R: JFrog Administrator or Project Admin)
 
 Configure JFrog Artifactory to accept OIDC tokens from Azure. This involves creating an OIDC provider and an identity mapping in Artifactory.
 
@@ -1118,8 +1049,6 @@ curl -X POST "https://$ARTIFACTORY_URL/access/api/v1/oidc/$OIDC_PROVIDER_NAME/id
 - The `token_spec.username` must be an existing Artifactory user
 - Ensure the user has permissions to pull images from your repositories
 
-
-
 For more information, see the [JFrog Platform Administration documentation on identity mappings](https://jfrog.com/help/r/jfrog-platform-administration-documentation/identity-mappings).
 
 ### Verify OIDC Provider
@@ -1136,7 +1065,82 @@ curl -X GET "https://$ARTIFACTORY_URL/access/api/v1/oidc/$OIDC_PROVIDER_NAME" \
 
 ---
 
-### 7. Deploy function code
+### 6. Deploy function code
+
+### Option 1 - Manual
+
+#### Prerequisites
+
+```bash
+KEY_VAULT_NAME="<azureml-workspac-key-vault-name>"
+ARTIFACTORY_URL="https://<your-jfrog-instance>.jfrog.io" 
+JFROG_OIDC_PROVIDER_NAME="<oidc-provider-configured-in-jfrog-name>" 
+AZURE_AD_TOKEN_AUDIENCE="<azure-entra-id-app-registration-client-id>" 
+ARTIFACTORY_TOKEN_SECRET_NAME="<key-vault-secret-name>" #where the rotated token is stored
+SECRET_TTL="<token-time-to-live-in seconds>" #(default: `21600` = 6 hours)
+```
+
+#### Configure Function App settings:
+
+These environment variables control the token rotation behavior. For more information, see [Configure function app settings](https://learn.microsoft.com/en-us/azure/azure-functions/functions-how-to-use-azure-function-app-settings).
+
+```bash
+az functionapp config appsettings set \
+  --name $FUNCTION_APP_NAME \
+  --resource-group $RESOURCE_GROUP \
+  --settings \
+    KEY_VAULT_NAME="$KEY_VAULT_NAME" \
+    ARTIFACTORY_URL="$ARTIFACTORY_URL" \
+    JFROG_OIDC_PROVIDER_NAME="$JFROG_OIDC_PROVIDER_NAME" \
+    AZURE_AD_TOKEN_AUDIENCE="$AZURE_AD_TOKEN_AUDIENCE" \
+    ARTIFACTORY_TOKEN_SECRET_NAME="$ARTIFACTORY_TOKEN_SECRET_NAME" \
+    SECRET_TTL="$SECRET_TTL" \
+    AzureWebJobsStorage__accountName="$STORAGE_ACCOUNT_NAME"
+```
+
+#### Deploy the Function Code
+
+Package and deploy the token rotation function to the Function App. For more information, see [Zip push deployment for Azure Functions](https://learn.microsoft.com/en-us/azure/azure-functions/deployment-zip-push).
+
+```bash
+# Create deployment package
+cd 2_secret_rotation_function
+zip -r function_app.zip . \
+  -x "terraform/*" "__pycache__/*" ".venv/*" "*.pyc" \
+     ".pytest_cache/*" "local.settings.json" ".env"
+
+# Deploy to Azure
+az functionapp deployment source config-zip \
+  --resource-group $RESOURCE_GROUP \
+  --name $FUNCTION_APP_NAME \
+  --src function_app.zip \
+  --build-remote true \
+  --timeout 600
+
+# Clean up
+rm function_app.zip
+cd -
+```
+
+**Invoke the function once** to perform the initial token rotation (otherwise the Key Vault secret is only updated on the next timer invocation):
+
+```bash
+FUNCTION_KEY=$(az functionapp keys list \
+  --resource-group $RESOURCE_GROUP \
+  --name $FUNCTION_APP_NAME \
+  --query "functionKeys.default" -o tsv)
+
+FUNCTION_URL="https://${FUNCTION_APP_NAME}.azurewebsites.net"
+
+curl -s -X POST "$FUNCTION_URL/api/KeyVaultSecretRotation" \
+  -H "x-functions-key: $FUNCTION_KEY" \
+  -H "Content-Type: application/json"
+```
+
+A `200` response with `{"status": "ok", ...}` confirms the rotation is working. In case of any error or failure, see [Azure Function App troubleshooting documentation](https://learn.microsoft.com/en-us/troubleshoot/azure/azure-functions/welcome-azure-functions).
+
+
+### Option 2 - Automation
 
 ```bash
 cd 2_secret_rotation_function/terraform
@@ -1147,7 +1151,7 @@ cd 2_secret_rotation_function/terraform
 
 ---
 
-### 8. You are ready to set up the AzureML and JFrog development environment
+### 7. You are ready to set up the AzureML and JFrog development environment
 
 See: [JFrog Setup (R&R: JFrog Administrator or Project Admin)](#jfrog-setup-rr-jfrog-administrator-or-project-admin)
 
