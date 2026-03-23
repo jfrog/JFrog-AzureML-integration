@@ -649,7 +649,6 @@ az keyvault secret set \
   --value '{"access_token":"<ACCESS_TOKEN>","username":"<USERNAME>"}'
 ```
 
----
 
 #### 2b. Create the Azure Function App for Token Rotation
 
@@ -809,7 +808,6 @@ az functionapp config appsettings set \
 | `ARTIFACTORY_TOKEN_SECRET_NAME` | Key Vault secret name where the rotated token is stored |
 | `SECRET_TTL` | Token time-to-live in seconds (default: `21600` = 6 hours) |
 
----
 
 #### 2c. Deploy the Function Code
 
@@ -912,7 +910,7 @@ PRINCIPAL_ID=$(az functionapp identity show \
   -o tsv)
 ```
 
-### 4. Create Federated Identity Credential
+### Create Federated Identity Credential
 
 ```bash
 
@@ -945,7 +943,7 @@ You should see your federated credential with:
 - `subject`: Your Function App identity object ID
 - `audiences`: `["api://AzureADTokenExchange"]`
 
-### 5. Update Azure Entra ID App Registration by enabling Assignment Required (R&R: Azure Administrator)
+### 4. Update Azure Entra ID App Registration by enabling Assignment Required (R&R: Azure Administrator)
 
 By default, **Assignment Required** is set to **No** on the enterprise application. This means any user or service principal in your tenant can acquire an access token from the app registration.
 
@@ -1036,7 +1034,7 @@ After this, the credential provider will continue to work via the federated cred
 
 ---
 
-### 6. JFrog Artifactory OIDC Configuration (R&R: JFrog Administrator or Project Admin)
+### 5. JFrog Artifactory OIDC Configuration (R&R: JFrog Administrator or Project Admin)
 
 Configure JFrog Artifactory to accept OIDC tokens from Azure. This involves creating an OIDC provider and an identity mapping in Artifactory.
 
@@ -1136,7 +1134,7 @@ curl -X GET "https://$ARTIFACTORY_URL/access/api/v1/oidc/$OIDC_PROVIDER_NAME" \
 
 ---
 
-### 7. Deploy function code
+### 6. Deploy function code
 
 ```bash
 cd 2_secret_rotation_function/terraform
@@ -1147,7 +1145,7 @@ cd 2_secret_rotation_function/terraform
 
 ---
 
-### 8. You are ready to set up the AzureML and JFrog development environment
+### 7. You are ready to set up the AzureML and JFrog development environment
 
 See: [JFrog Setup (R&R: JFrog Administrator or Project Admin)](#jfrog-setup-rr-jfrog-administrator-or-project-admin)
 
