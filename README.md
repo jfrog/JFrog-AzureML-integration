@@ -782,7 +782,7 @@ az role assignment create \
 ```
 **Continue with the Federated Identity Credentials Creation:**
 
-Described in [Step 3](3-federated-identity-credentials-rr-azure-administrator)
+Described in [Step 3](#3-federated-identity-credentials-rr-azure-administrator)
 
 ---
 
@@ -1072,9 +1072,9 @@ curl -X GET "https://$ARTIFACTORY_URL/access/api/v1/oidc/$OIDC_PROVIDER_NAME" \
 
 ```bash
 KEY_VAULT_NAME="<azureml-workspac-key-vault-name>"
-ARTIFACTORY_URL="<base-url-of-your-jfrog-platform>" #e.g. `https://myorg.jfrog.io`
-JFROG_OIDC_PROVIDER_NAME="<oidc-provider-configured-in-jfrog-name>" #(created in [step 5](#5-jfrog-artifactory-oidc-configuration-rr-jfrog-administrator-or-project-admin)) 
-AZURE_AD_TOKEN_AUDIENCE="<azure-entra-id-app-registration-client-id>" #(from [step 1](#create-azure-entra-id-app-registration))
+ARTIFACTORY_URL="https://<your-jfrog-instance>.jfrog.io" 
+JFROG_OIDC_PROVIDER_NAME="<oidc-provider-configured-in-jfrog-name>" 
+AZURE_AD_TOKEN_AUDIENCE="<azure-entra-id-app-registration-client-id>" 
 ARTIFACTORY_TOKEN_SECRET_NAME="<key-vault-secret-name>" #where the rotated token is stored
 SECRET_TTL="<token-time-to-live-in seconds>" #(default: `21600` = 6 hours)
 ```
@@ -1089,7 +1089,7 @@ az functionapp config appsettings set \
   --resource-group $RESOURCE_GROUP \
   --settings \
     KEY_VAULT_NAME="$KEY_VAULT_NAME" \
-    ARTIFACTORY_URL="https://<your-jfrog-instance>.jfrog.io" \
+    ARTIFACTORY_URL="$ARTIFACTORY_URL" \
     JFROG_OIDC_PROVIDER_NAME="<oidc-provider-name>" \
     AZURE_AD_TOKEN_AUDIENCE="<azure-app-client-id>" \
     ARTIFACTORY_TOKEN_SECRET_NAME="artifactory-access-token-secret" \
