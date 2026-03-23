@@ -1081,7 +1081,7 @@ curl -X GET "https://$ARTIFACTORY_URL/access/api/v1/oidc/$OIDC_PROVIDER_NAME" \
 
 ### 6. Deploy function code
 
-#### Option 1 - Manual
+### Option 1 - Manual
 
 #### Prerequisites
 
@@ -1141,7 +1141,7 @@ A `200` response with `{"status": "ok", ...}` confirms the rotation is working. 
 > - `Function App Enterprise Application Object ID` (also called `function_app_identity_principal_id`) — this is the `$FUNCTION_PRINCIPAL_ID` value from the identity assignment step above
 
 
-#### Option 2 - Automation
+### Option 2 - Automation
 
 ```bash
 cd 2_secret_rotation_function/terraform
