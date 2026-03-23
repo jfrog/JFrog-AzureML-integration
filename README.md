@@ -525,7 +525,7 @@ az rest --method PATCH \
 
 ### Set Up
 
-#### 2a. Create AzureML Workspace with VNet
+#### 1. Create AzureML Workspace with VNet
 
 Create the AzureML Workspace and its dependent resources. For detailed guidance, see [Create workspaces with Azure CLI](https://learn.microsoft.com/en-us/azure/machine-learning/how-to-manage-workspace-cli?view=azureml-api-2).
 
@@ -650,7 +650,7 @@ az keyvault secret set \
 ```
 
 
-#### 2b. Create the Azure Function App for Token Rotation
+#### 2. Create the Azure Function App for Token Rotation
 
 The Function App performs automatic OIDC-based token exchange with JFrog Artifactory and stores the resulting short-lived access token in Key Vault.
 
@@ -805,31 +805,31 @@ az functionapp config appsettings set \
 
 ### Set Up
 
-#### Create AzureML Workspace, Storage Account and Azure Key Vault
+### Create AzureML Workspace, Storage Account and Azure Key Vault
 
-### Prerequisites
+#### Prerequisites
 
 - See [1_azure_machine_learning_workspace/README.md — Prerequisites](1_azure_machine_learning_workspace/README.md#prerequisites)
 
-### Deploy
+#### Deploy
 
 - See [1_azure_machine_learning_workspace/README.md — Usage](1_azure_machine_learning_workspace/README.md#usage).
   
   This creates the workspace, VNet, subnets, Key Vault, storage, compute, and a **private endpoint** for the workspace in subnet 2.
 
-#### Create Azure Function App for Token Rotation
+### Create Azure Function App for Token Rotation
 
-### Prerequisites
+#### Prerequisites
 
 - See [2_secret_rotation_function/terraform/README.md — Prerequisites](2_secret_rotation_function/terraform/README.md#prerequisites)
 
-### Deploy
+#### Deploy
 
 - See [2_secret_rotation_function/terraform/README.md — Usage](2_secret_rotation_function/terraform/README.md#usage).
 
 ---
 
-## 3. Federated Identity Credentials (R&R: Azure Administrator)
+### 3. Federated Identity Credentials (R&R: Azure Administrator)
 
 Federated credentials allow the Function App managed identity to exchange tokens with the Azure Entra ID App Registration. This establishes trust between your Function App and Azure Entra ID.
 
@@ -887,6 +887,8 @@ You should see your federated credential with:
 - `issuer`: `https://login.microsoftonline.com/<TENANT_ID>/v2.0`
 - `subject`: Your Function App identity object ID
 - `audiences`: `["api://AzureADTokenExchange"]`
+
+---
 
 ### 4. Update Azure Entra ID App Registration by enabling Assignment Required (R&R: Azure Administrator)
 
@@ -1060,8 +1062,6 @@ curl -X POST "https://$ARTIFACTORY_URL/access/api/v1/oidc/$OIDC_PROVIDER_NAME/id
 - The `claims.sub` must match the Function App Enterprise Application Object ID (use `function_app_identity_principal_id` from Terraform output) 
 - The `token_spec.username` must be an existing Artifactory user
 - Ensure the user has permissions to pull images from your repositories
-
-
 
 For more information, see the [JFrog Platform Administration documentation on identity mappings](https://jfrog.com/help/r/jfrog-platform-administration-documentation/identity-mappings).
 
