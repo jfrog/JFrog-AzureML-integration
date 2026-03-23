@@ -780,24 +780,9 @@ az role assignment create \
   --role "Storage Queue Data Contributor" \
   --scope "/subscriptions/<subscription-id>/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.Storage/storageAccounts/$STORAGE_ACCOUNT_NAME"
 ```
+**Continue with the Federated Identity Credentials Creation:**
 
-**Configure Function App settings:**
-
-These environment variables control the token rotation behavior. For more information, see [Configure function app settings](https://learn.microsoft.com/en-us/azure/azure-functions/functions-how-to-use-azure-function-app-settings).
-
-```bash
-az functionapp config appsettings set \
-  --name $FUNCTION_APP_NAME \
-  --resource-group $RESOURCE_GROUP \
-  --settings \
-    KEY_VAULT_NAME="$KEY_VAULT_NAME" \
-    ARTIFACTORY_URL="https://<your-jfrog-instance>.jfrog.io" \
-    JFROG_OIDC_PROVIDER_NAME="<oidc-provider-name>" \
-    AZURE_AD_TOKEN_AUDIENCE="<azure-app-client-id>" \
-    ARTIFACTORY_TOKEN_SECRET_NAME="artifactory-access-token-secret" \
-    SECRET_TTL="21600" \
-    AzureWebJobsStorage__accountName="$STORAGE_ACCOUNT_NAME"
-```
+Described in [Step 3](3-federated-identity-credentials-rr-azure-administrator)
 
 ---
 
@@ -1085,15 +1070,32 @@ curl -X GET "https://$ARTIFACTORY_URL/access/api/v1/oidc/$OIDC_PROVIDER_NAME" \
 
 #### Prerequisites
 
-| Setting | Description |
-|---------|-------------|
-| `KEY_VAULT_NAME` | Name of the AzureML workspace Key Vault |
-| `ARTIFACTORY_URL` | Base URL of your JFrog platform (e.g. `https://myorg.jfrog.io`) |
-| `JFROG_OIDC_PROVIDER_NAME` | Name of the OIDC provider configured in JFrog (created in [step 6](#6-jfrog-artifactory-oidc-configuration-rr-jfrog-administrator-or-project-admin)) |
-| `AZURE_AD_TOKEN_AUDIENCE` | Azure Entra ID App Registration Client ID (from [step 1](#create-azure-entra-id-app-registration)) |
-| `ARTIFACTORY_TOKEN_SECRET_NAME` | Key Vault secret name where the rotated token is stored |
-| `SECRET_TTL` | Token time-to-live in seconds (default: `21600` = 6 hours) |
+```bash
+KEY_VAULT_NAME="<azureml-workspac-key-vault-name>"
+ARTIFACTORY_URL="<base-url-of-your-jfrog-platform>" #e.g. `https://myorg.jfrog.io`
+JFROG_OIDC_PROVIDER_NAME="<oidc-provider-configured-in-jfrog-name>" #(created in [step 5](#5-jfrog-artifactory-oidc-configuration-rr-jfrog-administrator-or-project-admin)) 
+AZURE_AD_TOKEN_AUDIENCE="<azure-entra-id-app-registration-client-id>" #(from [step 1](#create-azure-entra-id-app-registration))
+ARTIFACTORY_TOKEN_SECRET_NAME="<key-vault-secret-name>" #where the rotated token is stored
+SECRET_TTL="<token-time-to-live-in seconds>" #(default: `21600` = 6 hours)
+```
 
+#### Configure Function App settings:
+
+These environment variables control the token rotation behavior. For more information, see [Configure function app settings](https://learn.microsoft.com/en-us/azure/azure-functions/functions-how-to-use-azure-function-app-settings).
+
+```bash
+az functionapp config appsettings set \
+  --name $FUNCTION_APP_NAME \
+  --resource-group $RESOURCE_GROUP \
+  --settings \
+    KEY_VAULT_NAME="$KEY_VAULT_NAME" \
+    ARTIFACTORY_URL="https://<your-jfrog-instance>.jfrog.io" \
+    JFROG_OIDC_PROVIDER_NAME="<oidc-provider-name>" \
+    AZURE_AD_TOKEN_AUDIENCE="<azure-app-client-id>" \
+    ARTIFACTORY_TOKEN_SECRET_NAME="artifactory-access-token-secret" \
+    SECRET_TTL="21600" \
+    AzureWebJobsStorage__accountName="$STORAGE_ACCOUNT_NAME"
+```
 
 #### Deploy the Function Code
 
