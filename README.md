@@ -780,6 +780,12 @@ az role assignment create \
   --role "Storage Queue Data Contributor" \
   --scope "/subscriptions/<subscription-id>/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.Storage/storageAccounts/$STORAGE_ACCOUNT_NAME"
 ```
+
+> **Important:** Save these values for later use:
+>
+> - `Function App Enterprise Application Object ID` (also called `function_app_identity_principal_id`) — this is the `$FUNCTION_PRINCIPAL_ID` value from the identity assignment step above
+
+
 **Continue with the Federated Identity Credentials Creation:**
 
 Described in [Step 3](#3-federated-identity-credentials-rr-azure-administrator)
@@ -1088,12 +1094,12 @@ az functionapp config appsettings set \
   --name $FUNCTION_APP_NAME \
   --resource-group $RESOURCE_GROUP \
   --settings \
-    KEY_VAULT_NAME="$KEY_VAULT_NAME" \
-    ARTIFACTORY_URL="$ARTIFACTORY_URL" \
-    JFROG_OIDC_PROVIDER_NAME="<oidc-provider-name>" \
-    AZURE_AD_TOKEN_AUDIENCE="<azure-app-client-id>" \
-    ARTIFACTORY_TOKEN_SECRET_NAME="artifactory-access-token-secret" \
-    SECRET_TTL="21600" \
+    KEY_VAULT_NAME=$KEY_VAULT_NAME \
+    ARTIFACTORY_URL=$ARTIFACTORY_URL \
+    JFROG_OIDC_PROVIDER_NAME=$JFROG_OIDC_PROVIDER_NAME \
+    AZURE_AD_TOKEN_AUDIENCE=$AZURE_AD_TOKEN_AUDIENCE \
+    ARTIFACTORY_TOKEN_SECRET_NAME=$ARTIFACTORY_TOKEN_SECRET_NAME \
+    SECRET_TTL=$SECRET_TTL \
     AzureWebJobsStorage__accountName="$STORAGE_ACCOUNT_NAME"
 ```
 
@@ -1137,10 +1143,6 @@ curl -s -X POST "$FUNCTION_URL/api/KeyVaultSecretRotation" \
 ```
 
 A `200` response with `{"status": "ok", ...}` confirms the rotation is working. In case of any error or failure, see [Azure Function App troubleshooting documentation](https://learn.microsoft.com/en-us/troubleshoot/azure/azure-functions/welcome-azure-functions).
-
-> **Important:** Save these values for later use:
->
-> - `Function App Enterprise Application Object ID` (also called `function_app_identity_principal_id`) — this is the `$FUNCTION_PRINCIPAL_ID` value from the identity assignment step above
 
 
 ### Option 2 - Automation
