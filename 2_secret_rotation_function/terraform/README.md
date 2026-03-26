@@ -59,7 +59,7 @@ You will need them later on.
 
 
 3. **Continue to the next steps in the main README.md**
-[Federated Identity Credentials](../../README.md#3-federated-identity-credentials-rr-azure-administrator)
+[JFrog Artifactory OIDC Configuration](../../README.md#4-jfrog-artifactory-oidc-configuration-rr-jfrog-administrator-or-project-admin)
 
 ---
 ## Cleanup
