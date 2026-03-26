@@ -804,7 +804,7 @@ az functionapp config appsettings set \
 |---------|-------------|
 | `KEY_VAULT_NAME` | Name of the AzureML workspace Key Vault |
 | `ARTIFACTORY_URL` | Base URL of your JFrog platform (e.g. `https://myorg.jfrog.io`) |
-| `JFROG_OIDC_PROVIDER_NAME` | Name of the OIDC provider configured in JFrog (created in [step 6](#6-jfrog-artifactory-oidc-configuration-rr-jfrog-administrator-or-project-admin)) |
+| `JFROG_OIDC_PROVIDER_NAME` | Name of the OIDC provider configured in JFrog (created in [step 4](#4-jfrog-artifactory-oidc-configuration-rr-jfrog-administrator-or-project-admin)) |
 | `AZURE_AD_TOKEN_AUDIENCE` | Azure Entra ID App Registration Client ID (from [step 1](#create-azure-entra-id-app-registration)) |
 | `ARTIFACTORY_TOKEN_SECRET_NAME` | Key Vault secret name where the rotated token is stored |
 | `SECRET_TTL` | Token time-to-live in seconds (default: `21600` = 6 hours) |
@@ -886,11 +886,13 @@ A `200` response with `{"status": "ok", ...}` confirms the rotation is working. 
 
 ---
 
-## 3. Federated Identity Credentials (R&R: Azure Administrator)
 
-Federated credentials allow the Function App managed identity to exchange tokens with the Azure Entra ID App Registration. This establishes trust between your Function App and Azure Entra ID.
+### 3. Update Azure Entra ID App Registration by enabling Assignment Required (R&R: Azure Administrator)
 
-For more information, see the [Azure Managed Identities documentation](https://learn.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/).
+By default, **Assignment Required** is set to **No** on the enterprise application. This means any user or service principal in your tenant can acquire an access token from the app registration. Since the JFrog Credential Provider exchanges this token with Artifactory for image pull credentials, leaving this open is a security concern.
+
+
+Setting **Assignment Required** to **Yes** ensures that only explicitly assigned principals can obtain tokens from the app.
 
 ### Prerequisites
 
@@ -900,56 +902,6 @@ TENANT_ID=<tenant id> #(also called `azure_tenant_id`)
 FUNCTION_APP_NAME="<your-function-app-name>" #e.g. artifactory-token-rotation
 RESOURCE_GROUP="<your-resource-group>"
 ```
-
-### Get Function App principalId 
-
-```bash
-
-PRINCIPAL_ID=$(az functionapp identity show \
-  --name $FUNCTION_APP_NAME \
-  --resource-group $RESOURCE_GROUP \
-  --query "principalId" \
-  -o tsv)
-```
-
-### 4. Create Federated Identity Credential
-
-```bash
-
-FEDERATED_CREDENTIAL_NAME="function-app-federated-credential"
-AUDIENCE="api://AzureADTokenExchange"
-ISSUER="https://login.microsoftonline.com/$TENANT_ID/v2.0"
-
-# Create the federated credential
-az ad app federated-credential create \
-  --id "$APP_CLIENT_ID" \
-  --parameters "{
-    \"name\": \"$FEDERATED_CREDENTIAL_NAME\",
-    \"issuer\": \"$ISSUER\",
-    \"subject\": \"$PRINCIPAL_ID\",
-    \"audiences\": [\"$AUDIENCE\"],
-    \"description\": \"Federated credential for Function App managed identity\"
-  }"
-```
-
-### Verify Federated Credential
-
-```bash
-# List federated credentials
-az ad app federated-credential list --id "$APP_CLIENT_ID"
-```
-
-You should see your federated credential with:
-
-- `issuer`: `https://login.microsoftonline.com/<TENANT_ID>/v2.0`
-- `subject`: Your Function App identity object ID
-- `audiences`: `["api://AzureADTokenExchange"]`
-
-### 5. Update Azure Entra ID App Registration by enabling Assignment Required (R&R: Azure Administrator)
-
-By default, **Assignment Required** is set to **No** on the enterprise application. This means any user or service principal in your tenant can acquire an access token from the app registration. Since the JFrog Credential Provider exchanges this token with Artifactory for image pull credentials, leaving this open is a security concern.
-
-Setting **Assignment Required** to **Yes** ensures that only explicitly assigned principals can obtain tokens from the app.
 
 **Enable via Azure Portal:**
 
@@ -1036,7 +988,7 @@ After this, the credential provider will continue to work via the federated cred
 
 ---
 
-### 6. JFrog Artifactory OIDC Configuration (R&R: JFrog Administrator or Project Admin)
+### 4. JFrog Artifactory OIDC Configuration (R&R: JFrog Administrator or Project Admin)
 
 Configure JFrog Artifactory to accept OIDC tokens from Azure. This involves creating an OIDC provider and an identity mapping in Artifactory.
 
@@ -1136,7 +1088,7 @@ curl -X GET "https://$ARTIFACTORY_URL/access/api/v1/oidc/$OIDC_PROVIDER_NAME" \
 
 ---
 
-### 7. Deploy function code
+### 5. Deploy function code
 
 ```bash
 cd 2_secret_rotation_function/terraform
@@ -1147,7 +1099,7 @@ cd 2_secret_rotation_function/terraform
 
 ---
 
-### 8. You are ready to set up the AzureML and JFrog development environment
+### 6. You are ready to set up the AzureML and JFrog development environment
 
 See: [JFrog Setup (R&R: JFrog Administrator or Project Admin)](#jfrog-setup-rr-jfrog-administrator-or-project-admin)
 
